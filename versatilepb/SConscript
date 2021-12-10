@@ -1,0 +1,50 @@
+from building import *
+
+for sc in Glob('*/SConscript'):
+    SConscript(sc)
+
+CWD = GetCurrentDir()
+
+Import('BUILD_DIR')
+
+ApplicationCanBL = query_application('CanBL')
+
+
+objs = Glob('*/*.c') + Glob('*/*.S')
+
+
+@register_library
+class LibraryVersatilepb(Library):
+    def config(self):
+        self.Append(CPPDEFINES=['OS_TICKS_PER_SECOND=100'])
+        self.LIBS = ['QemuArmInt']
+        self.CPPPATH = ['$INFRAS']
+        self.source = objs
+
+
+@register_application
+class ApplicationVersatilepbCanBL(ApplicationCanBL):
+    compiler = 'ArmGCC'
+
+    def platform_config(self):
+        self.LIBS += ['Versatilepb', 'LibC']
+        self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x00050000',
+                                'BL_FLSDRV_MEMORY_LOW=0x00050000', 'BL_FLSDRV_MEMORY_HIGH=0x00060000',
+                                'BL_APP_MEMORY_LOW=0x00060000', 'BL_APP_MEMORY_HIGH=0x08000000'])
+        self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
+                               '-Map', '%s/VersatilepbCanBL.map' % (BUILD_DIR)])
+
+
+@register_application
+class ApplicationVersatilepbCanBLRun(Application):
+    def config(self):
+        pass
+
+    def build(self):
+        qemu = Qemu()
+        target = '%s/VersatilepbCanBL' % (BUILD_DIR[:-3])
+        if(IsPlatformWindows()):
+            target = target + '.exe'
+        qemu.Run('-m 128 -M versatilepb -kernel %s' % (target))
