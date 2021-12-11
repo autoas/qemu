@@ -91,14 +91,6 @@ static void irqDisable() {
   __asm volatile("msr		cpsr_c, r0");  // Write it back to the CPSR register.
 }
 
-void tpl_enable_os_interrupts(void) {
-  irqEnable();
-}
-
-void tpl_disable_os_interrupts(void) {
-  irqDisable();
-}
-
 int EnableInterrupts() {
   irqEnable();
   return 0;

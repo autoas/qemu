@@ -4,11 +4,11 @@
 typedef int (*isr_callback_t)(void *cpu);
 
 struct irq_ctrl {
-  int (*init)();
-  int (*enable_line)(int num);
-  int (*disable_line)(int num);
-  int (*handler)(void *cpu);
-  const char *name;
+	int (*init)();
+	int (*enable_line)(int num);
+	int (*disable_line)(int num);
+	int (*handler)(void*cpu);
+	const char *name;
 };
 
 int __irq_call_isr(int num, void *cpu);

@@ -8,7 +8,7 @@ CWD = GetCurrentDir()
 Import('BUILD_DIR')
 
 ApplicationCanBL = query_application('CanBL')
-
+ApplicationCanApp = query_application('CanApp')
 
 objs = Glob('*/*.c') + Glob('*/*.S')
 
@@ -43,8 +43,42 @@ class ApplicationVersatilepbCanBLRun(Application):
         pass
 
     def build(self):
-        qemu = Qemu()
+        qemu = Qemu(arch='arm')
         target = '%s/VersatilepbCanBL' % (BUILD_DIR[:-3])
+        if(IsPlatformWindows()):
+            target = target + '.exe'
+        qemu.Run('-m 128 -M versatilepb -kernel %s' % (target))
+
+
+@register_application
+class ApplicationVersatilepbCanApp(ApplicationCanApp):
+    compiler = 'ArmGCC'
+
+    def platform_config(self):
+        self.LIBS += ['Versatilepb', 'LibC']
+        self.Append(CPPDEFINES=['USE_STD_DEBUG'])
+        self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
+                               '-Map', '%s/VersatilepbCanApp.map' % (BUILD_DIR)])
+
+    def config(self):
+        super().config()
+        for libName in ['Dem', 'Fls', 'Fee', 'NvM', 'Eep', 'Ea']:
+            if libName in self.LIBS:
+                self.LIBS.remove(libName)
+            macro = 'USE_%s' % (libName.upper())
+            self.Remove(CPPDEFINES=macro)
+
+
+@register_application
+class ApplicationVersatilepbCanAppRun(Application):
+    def config(self):
+        pass
+
+    def build(self):
+        qemu = Qemu(arch='arm')
+        target = '%s/VersatilepbCanApp' % (BUILD_DIR[:-3])
         if(IsPlatformWindows()):
             target = target + '.exe'
         qemu.Run('-m 128 -M versatilepb -kernel %s' % (target))
