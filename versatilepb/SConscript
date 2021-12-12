@@ -1,3 +1,18 @@
+
+'''
+set LL_DL=64
+scons --app=VersatilepbFlashDriver
+scons --app=VersatilepbCanApp
+scons --app=VersatilepbCanBL
+build\nt\GCC\Loader\Loader.exe -a build\nt\GCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
+build\nt\GCC\Loader\Loader.exe -f build\nt\GCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
+
+scons --app=VersatilepbCanBLRun
+build\nt\GCC\Loader\Loader.exe -a build\nt\GCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\GCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
+
+'''
+
+
 from building import *
 
 for sc in Glob('*/SConscript'):
@@ -29,12 +44,30 @@ class ApplicationVersatilepbCanBL(ApplicationCanBL):
     def platform_config(self):
         self.LIBS += ['Versatilepb', 'LibC']
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x00050000',
-                                'BL_FLSDRV_MEMORY_LOW=0x00050000', 'BL_FLSDRV_MEMORY_HIGH=0x00060000',
-                                'BL_APP_MEMORY_LOW=0x00060000', 'BL_APP_MEMORY_HIGH=0x08000000'])
+                                'BL_FLSDRV_MEMORY_LOW=0x00050000', 'BL_FLSDRV_MEMORY_HIGH=0x00051000',
+                                'BL_APP_MEMORY_LOW=0x00060000', 'BL_APP_MEMORY_HIGH=0x00160000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanBL.map' % (BUILD_DIR)])
+
+
+flsObjs = Glob('../flash/*.c')
+
+
+@register_application
+class ApplicationVersatilepbFlashDriver(Application):
+    compiler = 'ArmGCC'
+
+    def config(self):
+        self.CPPPATH = ['$INFRAS']
+        self.Append(
+            CPPDEFINES=['FLS_START_ADDRESS=0x00060000', 'FLS_END_ADDRESS=0x08000000'])
+        self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-flsdrv.lds' % (CWD),
+                               '-Map', '%s/VersatilepbFlashDriver.map' % (BUILD_DIR)])
+        self.source = flsObjs
 
 
 @register_application
@@ -56,7 +89,8 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
 
     def platform_config(self):
         self.LIBS += ['Versatilepb', 'LibC']
-        self.Append(CPPDEFINES=['USE_STD_DEBUG'])
+        self.Append(CPPDEFINES=['USE_STD_DEBUG',
+                    'BL_FLSDRV_MEMORY_LOW=0x00050000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),

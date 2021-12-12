@@ -1,9 +1,3 @@
-/**
- * BlueThunder Linker Script for the raspberry Pi!
- *
- *
- *
- **/
 MEMORY
 {
   RESERVED  (r)    : ORIGIN = 0x00000000, LENGTH = 32K
