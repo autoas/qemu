@@ -6,10 +6,13 @@
 /* ================================ [ INCLUDES  ] ============================================== */
 #include "Std_Types.h"
 #include "Std_Debug.h"
+#include "Std_Critical.h"
 #include "Dcm.h"
 /* ================================ [ MACROS    ] ============================================== */
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
+extern void application_main(void);
+extern void reset_main(void);
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
@@ -17,6 +20,9 @@ void BL_AliveIndicate(void) {
 }
 
 void BL_JumpToApp(void) {
+#ifdef USE_BL
+  application_main();
+#endif
 }
 
 boolean BL_IsUpdateRequested(void) {
@@ -51,4 +57,23 @@ void User_MainTask10ms(void) {
 }
 
 void App_EnterProgramSession(void) {
+  uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
+  Dcm_ProgConditionsType *cond = (Dcm_ProgConditionsType *)(BL_FLSDRV_MEMORY_LOW + 4);
+  EnterCritical();
+  *magic = 0x12345678;
+  cond->ConnectionId = 0;
+  cond->TesterAddress = 0;
+  cond->Sid = 0x10;
+  cond->SubFncId = 0x02;
+  cond->Reprograming = TRUE;
+  cond->ApplUpdated = TRUE;
+  cond->ResponseRequired = TRUE;
+  reset_main();
+  ExitCritical();
+}
+
+void Dcm_PerformReset(uint8_t resetType) {
+  EnterCritical();
+  reset_main();
+  ExitCritical();
 }

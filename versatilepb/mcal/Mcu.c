@@ -15,8 +15,6 @@ extern void vic_setup(void);
 extern void irq_init(void);
 extern void serial_init(void);
 extern void Irq_Enable(void);
-
-extern void application_main(void);
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
@@ -26,12 +24,4 @@ void Mcu_Init(const Mcu_ConfigType *ConfigPtr) {
   serial_init();
   timer_init(NULL);
   Irq_Enable();
-}
-
-void Dcm_PerformReset(uint8_t resetType) {
-  EnterCritical();
-#ifdef USE_BL
-  application_main();
-#endif
-  ExitCritical();
 }

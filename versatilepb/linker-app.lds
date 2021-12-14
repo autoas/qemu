@@ -11,6 +11,8 @@ MEMORY
 
 ENTRY(_start)
 
+reset_main = 0x00008040;
+
 SECTIONS {
     /*
    * Our init section allows us to place the bootstrap code at address 0x8000

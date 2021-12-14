@@ -4,16 +4,21 @@ set LL_DL=64
 scons --app=VersatilepbFlashDriver
 scons --app=VersatilepbCanApp
 scons --app=VersatilepbCanBL
-build\nt\GCC\Loader\Loader.exe -a build\nt\GCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
-build\nt\GCC\Loader\Loader.exe -f build\nt\GCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
+build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
+build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
 
 scons --app=VersatilepbCanBLRun
-build\nt\GCC\Loader\Loader.exe -a build\nt\GCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\GCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
+build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
 
 '''
 
 
 from building import *
+
+@register_compiler
+def CompilerQemuVersatilepbGCC(**kwargs):
+    env = CreateCompiler('ArmGCC')
+    return env
 
 for sc in Glob('*/SConscript'):
     SConscript(sc)
@@ -39,17 +44,20 @@ class LibraryVersatilepb(Library):
 
 @register_application
 class ApplicationVersatilepbCanBL(ApplicationCanBL):
-    compiler = 'ArmGCC'
+    compiler = 'QemuVersatilepbGCC'
 
     def platform_config(self):
         self.LIBS += ['Versatilepb', 'LibC']
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x00050000',
                                 'BL_FLSDRV_MEMORY_LOW=0x00050000', 'BL_FLSDRV_MEMORY_HIGH=0x00051000',
                                 'BL_APP_MEMORY_LOW=0x00060000', 'BL_APP_MEMORY_HIGH=0x00160000'])
+        self.Append(CPPDEFINES=['CANTP_CFG_N_Cr=500'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanBL.map' % (BUILD_DIR)])
+        appObj = '%s/../VersatilepbCanApp/VersatilepbCanApp.o' % (BUILD_DIR)
+        self.source += [appObj]
 
 
 flsObjs = Glob('../flash/*.c')
@@ -57,7 +65,18 @@ flsObjs = Glob('../flash/*.c')
 
 @register_application
 class ApplicationVersatilepbFlashDriver(Application):
-    compiler = 'ArmGCC'
+    compiler = 'QemuVersatilepbGCC'
+
+    def signit(self):
+        sign = os.path.abspath('%s/../../GCC/Loader/Loader' %
+                               (BUILD_DIR))
+        if IsPlatformWindows():
+            sign += '.exe'
+        if os.path.isfile(sign):
+            target = '%s/VersatilepbFlashDriver' % (BUILD_DIR)
+            s19T = target + '.s19'
+            cmd = '%s -f %s -s 4096' % (sign, s19T)
+            self.AddPostAction(cmd)
 
     def config(self):
         self.CPPPATH = ['$INFRAS']
@@ -68,6 +87,7 @@ class ApplicationVersatilepbFlashDriver(Application):
         self.Append(LINKFLAGS=['-T', '%s/linker-flsdrv.lds' % (CWD),
                                '-Map', '%s/VersatilepbFlashDriver.map' % (BUILD_DIR)])
         self.source = flsObjs
+        self.signit()
 
 
 @register_application
@@ -85,7 +105,33 @@ class ApplicationVersatilepbCanBLRun(Application):
 
 @register_application
 class ApplicationVersatilepbCanApp(ApplicationCanApp):
-    compiler = 'ArmGCC'
+    compiler = 'QemuVersatilepbGCC'
+
+    def signit(self):
+        sign = os.path.abspath('%s/../../GCC/Loader/Loader' %
+                               (BUILD_DIR))
+        if IsPlatformWindows():
+            sign += '.exe'
+        if os.path.isfile(sign):
+            target = '%s/VersatilepbCanApp' % (BUILD_DIR)
+            s19T = target + '.s19'
+            cmd = '%s -a %s -s 1048576' % (sign, s19T)
+            self.AddPostAction(cmd)
+            env = self.ensure_env()
+            cplPath = os.path.dirname(env['CC'])
+
+            binT = target + '.bin'
+            objT = target + '.o'
+            symName = binT.replace(':', '_').replace(
+                '/', '_').replace('\\', '_').replace('.', '_')
+            cmd = '%s/arm-none-eabi-objcopy -I binary -O elf32-littlearm %s %s --binary-architecture arm' % (
+                cplPath, binT, objT)
+            self.AddPostAction(cmd)
+            cmd = '%s/arm-none-eabi-objcopy -I elf32-littlearm -O elf32-littlearm %s %s' \
+                  ' --rename-section .data=.app --redefine-sym _binary_%s_start=._app_start' \
+                  ' --redefine-sym _binary_%s_end=._app_end --redefine-sym _binary_%s_size=._app_size' % (
+                      cplPath, objT, objT, symName, symName, symName)
+            self.AddPostAction(cmd)
 
     def platform_config(self):
         self.LIBS += ['Versatilepb', 'LibC']
@@ -95,6 +141,7 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanApp.map' % (BUILD_DIR)])
+        self.signit()
 
     def config(self):
         super().config()
