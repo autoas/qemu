@@ -77,3 +77,18 @@ void Dcm_PerformReset(uint8_t resetType) {
   reset_main();
   ExitCritical();
 }
+
+void InitBssSection(uint32_t *pSrc, uint32_t *pEnd) {
+  while (pSrc < pEnd) {
+    *pSrc = 0;
+    pSrc++;
+  }
+}
+
+void InitDataSection(uint32_t *pSrc, uint32_t *pDst, uint32_t *pEnd) {
+  while (pDst < pEnd) {
+    *pDst = *pSrc;
+    pDst++;
+    pSrc++;
+  }
+}

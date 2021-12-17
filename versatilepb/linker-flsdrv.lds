@@ -1,7 +1,6 @@
 MEMORY
 {
-  RESERVED  (r)    : ORIGIN = 0x00000000, LENGTH = 32K
-  FLASH     (rwx)  : ORIGIN = 0x00050000, LENGTH = 64K
+  FLASH        (rwx)  : ORIGIN = 0x00140000, LENGTH = 4K
 }
 
 ENTRY(FlashHeader)
@@ -10,8 +9,7 @@ SECTIONS
 {
     .text :
     {
-    *(.rodata*)
-        *(.data*)
-        *(.text*)
+      *(.rodata*)
+      *(.text*)
     } > FLASH
 }
