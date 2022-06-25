@@ -5,7 +5,7 @@ scons --cpl=QemuVersatilepbGCC --app=VersatilepbFlashDriver
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanApp
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBL
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
-build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
+build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 2048
 
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBLRun
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
@@ -51,7 +51,7 @@ class ApplicationVersatilepbCanBL(ApplicationCanBL):
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x00140000',
                                 'BL_FLSDRV_MEMORY_LOW=0x00140000', 'BL_FLSDRV_MEMORY_HIGH=0x00141000',
                                 'BL_APP_MEMORY_LOW=0x00040000', 'BL_APP_MEMORY_HIGH=0x00140000'])
-        self.Append(CPPDEFINES=['CANTP_CFG_N_Cr=500'])
+        self.Append(CPPDEFINES=['CANTP_CFG_N_Cr=5000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
