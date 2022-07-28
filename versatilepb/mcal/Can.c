@@ -143,28 +143,4 @@ void Can_Input(uint8_t Controller, uint8_t ch) {
 }
 
 void Can_MainFunction_Read(void) {
-  int i;
-  int r = 0;
-  uint32_t canid;
-  uint8_t dlc;
-  uint8_t data[64];
-  Can_HwType Mailbox;
-  PduInfoType PduInfo;
-
-  for (i = 0; i < CAN_MAX_HOH; i++) {
-    if (lOpenFlag & (1 << i)) {
-      canid = (uint32_t)-1;
-      dlc = sizeof(data);
-
-      if (TRUE == r) {
-        Mailbox.CanId = canid;
-        Mailbox.ControllerId = i;
-        Mailbox.Hoh = i;
-        PduInfo.SduLength = dlc;
-        PduInfo.SduDataPtr = data;
-        PduInfo.MetaDataPtr = NULL;
-        CanIf_RxIndication(&Mailbox, &PduInfo);
-      }
-    }
-  }
 }

@@ -5,11 +5,12 @@ scons --cpl=QemuVersatilepbGCC --app=VersatilepbFlashDriver
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanApp
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBL
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
-build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 2048
+build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
 
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBLRun
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
 
+qemu-system-arm.exe -m 128 -M versatilepb -kernel build/nt/QemuVersatilepbGCC/VersatilepbCanBL/VersatilepbCanBL.exe -serial stdio -serial tcp:127.0.0.1:9000,server
 '''
 
 
