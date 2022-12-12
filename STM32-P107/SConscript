@@ -1,0 +1,47 @@
+
+'''
+scons --cpl=CM3GCC --app=STM32P107
+'''
+
+from building import *
+
+for sc in Glob('*/SConscript'):
+    SConscript(sc)
+
+CWD = GetCurrentDir()
+
+Import('BUILD_DIR')
+
+objs = Glob('src/*.c') + Glob('src/*.S')
+generate(Glob('config/*.json'))
+Os_Cfg = Glob('config/GEN/Os*.c')
+
+
+@register_application
+class ApplicationSTM32P107(Application):
+    compiler = 'CM3GCC'
+
+    def config(self):
+        self.LIBS = ['LibC', 'StdTimer']
+        self.CPPPATH += ['$INFRAS']
+        self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
+                               '-Wl,-Map="%s/STM32P107.map"' % (BUILD_DIR)])
+        self.SelectOS(arch='cortex-m', config=Os_Cfg,
+                      CPPDEFINES=['OS_STK_SIZE_SCALER=4', 'CHIP_STM32P107',
+                                  'OS_TICKS_PER_SECOND=100'],
+                      CPPPATH=['%s/../arm/CMSIS/Core/Include' % (CWD),
+                               '%s/include' % (CWD)])
+        self.source = objs
+
+
+@register_application
+class ApplicationSTM32P107Run(Application):
+    def config(self):
+        pass
+
+    def build(self):
+        qemu = Qemu(arch='armmcu')
+        target = '%s/STM32P107' % (BUILD_DIR[:-3])
+        if(IsPlatformWindows()):
+            target = target + '.exe'
+        qemu.Run('--board STM32-P107 --image %s' % (target))

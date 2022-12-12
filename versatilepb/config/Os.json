@@ -1,0 +1,10 @@
+{
+  "class": "OS",
+  "PTHREAD": 32,
+  "PTHREAD_PRIORITY": 32,
+  "StartupHook": true,
+  "TaskList": [
+    { "Name": "TaskIdle",  "Priority": 0, "AutoStart": true },
+    { "Name": "TaskPosix", "Priority": 32, "EventList": [ {"Name": "EV1", "Mask":1} ] }
+  ]
+}

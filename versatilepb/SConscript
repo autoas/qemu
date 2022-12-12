@@ -16,6 +16,8 @@ qemu-system-arm.exe -m 128 -M versatilepb -kernel build/nt/QemuVersatilepbGCC/Ve
 
 from building import *
 
+generate(Glob('config/*.json'))
+
 @register_compiler
 def CompilerQemuVersatilepbGCC(**kwargs):
     env = CreateCompiler('ArmGCC')
@@ -31,14 +33,17 @@ Import('BUILD_DIR')
 ApplicationCanBL = query_application('CanBL')
 ApplicationCanApp = query_application('CanApp')
 
-objs = Glob('*/*.c') + Glob('*/*.S')
+objs = Glob('*/*.c')
 
+objsAsm = Glob('*/*.S')
+
+Os_Cfg = Glob('config/GEN/Os*.c')
 
 @register_library
 class LibraryVersatilepb(Library):
     def config(self):
         self.Append(CPPDEFINES=['OS_TICKS_PER_SECOND=100'])
-        self.LIBS = ['QemuArmInt']
+        self.LIBS = ['QemuArmInt', 'gcc']
         self.CPPPATH = ['$INFRAS']
         self.source = objs
 
@@ -58,7 +63,7 @@ class ApplicationVersatilepbCanBL(ApplicationCanBL):
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanBL.map' % (BUILD_DIR)])
         appObj = '%s/../VersatilepbCanApp/VersatilepbCanApp.o' % (BUILD_DIR)
-        self.source += [appObj]
+        self.source += [appObj] + objsAsm
 
 
 flsObjs = Glob('../flash/*.c')
@@ -135,13 +140,15 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        self.LIBS += ['Versatilepb', 'LibC']
+        global TARGET_ARCH
+        self.LIBS += ['Versatilepb', 'LibC', 'OSAL']
         self.Append(CPPDEFINES=['USE_STD_DEBUG',
                     'BL_FLSDRV_MEMORY_LOW=0x00140000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanApp.map' % (BUILD_DIR)])
+        self.SelectOS(arch='arm', config=Os_Cfg, CPPDEFINES=['OS_STK_SIZE_SCALER=4', 'USE_OSAL'])
         self.signit()
 
     def config(self):
@@ -159,7 +166,7 @@ class ApplicationVersatilepbCanAppRun(Application):
         pass
 
     def build(self):
-        qemu = Qemu(arch='arm')
+        qemu = Qemu(arch='arm', CAN0=True)
         target = '%s/VersatilepbCanApp' % (BUILD_DIR[:-3])
         if(IsPlatformWindows()):
             target = target + '.exe'

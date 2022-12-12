@@ -1,7 +1,7 @@
 MEMORY
 {
    FLASH        (rx)   : ORIGIN = 0x00040000, LENGTH = 1024K
-   RAM          (rwx)  : ORIGIN = 0x00140000, LENGTH = 256K
+   RAM          (rwx)  : ORIGIN = 0x00140000, LENGTH = 127M
 }
 
 ENTRY(_start)
