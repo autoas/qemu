@@ -1,0 +1,21 @@
+{
+  "class": "OS",
+  "CPU_CORE_NUMBER": 2,
+  "PTHREAD": 32,
+  "PTHREAD_PRIORITY": 32,
+  "StartupHook": true,
+  "TaskList": [
+    { "Name": "TaskIdle0", "Priority": 0, "AutoStart": true, "Cpu": 0 },
+    { "Name": "TaskIdle1", "Priority": 0, "AutoStart": true, "Cpu": 1 },
+    { "Name": "Task10Ms", "Priority": 7 },
+    { "Name": "TaskPosix", "Priority": 32, "EventList": [ {"Name": "EV1", "Mask":1} ] }
+  ],
+  "CounterList": [
+    { "Name": "CounterSystem" }
+  ],
+  "AlarmList":[
+    { "Name": "Alarm0", "Counter":"CounterSystem",
+      "Action": "ActivateTask", "Task":"Task10Ms",
+      "AutoStart": true, "StartTime": 1, "Period": 1 }
+  ]
+}

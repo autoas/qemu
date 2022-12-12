@@ -4,39 +4,38 @@ CWD = GetCurrentDir()
 
 Import('BUILD_DIR')
 
-ApplicationCanBL = query_application('CanBL')
+generate(Glob('config/*.json'))
 
-objs = Glob('*/*.c') + Glob('*/*.S')
+objs = Glob('*/*.c') + Glob('*.c')
+objsAsm = Glob('*/*.S')
+Os_Cfg = Glob('config/GEN/Os*.c')
 
 
-@register_library
-class LibraryVirt(Library):
+@register_application
+class ApplicationVirt(Application):
+    compiler = 'Arm64GCC'
+
     def config(self):
-        self.LIBS = ['Arm', 'QemuArmInt']
-        self.Append(CPPDEFINES=['__AARCH64__', 'OS_TICKS_PER_SECOND=1000'])
-        self.CPPPATH = ['$INFRAS']
+        self.LIBS = ['LibC', 'StdTimer', 'Arm']
+        self.CPPPATH += ['$INFRAS']
+        self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
+                               '-Map', '%s/virtbl.map' % (BUILD_DIR), '-Os'])
+        self.SelectOS(arch='arm64', config=Os_Cfg,
+                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
+                                  '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
+                      CPPPATH=['%s/../arm' % (CWD)])
         self.source = objs
 
 
 @register_application
-class ApplicationVirtCanBL(ApplicationCanBL):
-    compiler = 'Arm64GCC'
-
-    def platform_config(self):
-        self.LIBS += ['Virt', 'LibC']
-        self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x40050000',
-                                'BL_FLSDRV_MEMORY_LOW=0x40050000', 'BL_FLSDRV_MEMORY_HIGH=0x40060000',
-                                'BL_APP_MEMORY_LOW=0x40060000', 'BL_APP_MEMORY_HIGH=0x40010000'])
-        self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
-        self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
-                               '-Map', '%s/virtbl.map' % (BUILD_DIR), '-Os'])
-
-@register_application
-class ApplicationVirtCanBLRun(Application):
+class ApplicationVirtRun(Application):
     def config(self):
         pass
+
     def build(self):
-        qemu = Qemu()
-        target = '%s/VirtCanBL'%(BUILD_DIR[:-3])
-        if(IsPlatformWindows()): target = target + '.exe'
-        qemu.Run('-M virt -cpu cortex-a57 -smp 2 -kernel %s'%(target))
+        qemu = Qemu(arch='arm64')
+        target = '%s/Virt' % (BUILD_DIR[:-3])
+        if(IsPlatformWindows()):
+            target = target + '.exe'
+        qemu.Run('-M virt -cpu cortex-a57 -smp 2 -kernel %s' % (target))

@@ -10,16 +10,11 @@
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
 extern void Irq_Init(void);
-extern void Irq_Enable(void);
+extern void EnableInterrupt(void);
 extern void Os_PortStartSysTick(void);
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
 void Mcu_Init(const Mcu_ConfigType *ConfigPtr) {
   Irq_Init();
-  Os_PortStartSysTick();
-  Irq_Enable();
-}
-
-void Dcm_PerformReset(uint8_t resetType) {
 }

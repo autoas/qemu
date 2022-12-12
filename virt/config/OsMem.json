@@ -1,0 +1,11 @@
+{
+  "class": "MemCluster",
+  "name" : "Os",
+  "clusters": [
+    { "name": "large", "size": 8192, "number": 32 },
+    { "name": "middle", "size": 2048, "number": 64 },
+    { "name": "small", "size": 512, "number": 128 },
+    { "name": "tiny", "size": 128, "number": 128 }
+  ],
+  "comments": "generally for OS posix PTHREAD"
+}

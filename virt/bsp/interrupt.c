@@ -378,11 +378,11 @@ static void gicv3_write_sgi1r(uint64_t val) {
 
 /* ================================ [ FUNCTIONS ] ============================================== */
 
-void Irq_Enable(void) {
+void EnableInterrupt(void) {
   __asm__ __volatile__("msr DAIFClr, %0\n\t" : : "i"(DAIF_FIQ_BIT | DAIF_IRQ_BIT) : "memory");
 }
 
-void Irq_Disable(void) {
+void DisableInterrupt(void) {
   __asm__ __volatile__("msr DAIFSet, %0\n\t" : : "i"(DAIF_FIQ_BIT | DAIF_IRQ_BIT) : "memory");
 }
 
@@ -391,7 +391,7 @@ imask_t Std_EnterCritical(void) {
 
   __asm__ __volatile__("mrs %0, DAIF\n\t" : "=r"(imask) : : "memory");
 
-  Irq_Disable();
+  DisableInterrupt();
 
   return imask;
 }
@@ -457,8 +457,8 @@ void __attribute__((weak)) Os_PortException(long exception, void *sp, long esr) 
 
 /* https://static.docs.arm.com/dai0492/a/GICv3_Software_Overview_Official_Release_A.pdf */
 void Ipc_KickTo(int cpu, int irqno) {
-  assert(irqno < 16);
+  asAssert(irqno < 16);
 
-  //	gicv3_write_sgi1r((1<<(cpu+24)) | irqno);
+  gicv3_write_sgi1r((1<<(cpu+24)) | irqno);
   isb();
 }

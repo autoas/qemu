@@ -1,26 +1,21 @@
 /**
  * SSAS - Simple Smart Automotive Software
  * Copyright (C) 2021 Parai Wang <parai@foxmail.com>
+ *
  */
+#ifndef _IO_H
+#define _IO_H
 /* ================================ [ INCLUDES  ] ============================================== */
-#include "Can.h"
+#include "Std_Types.h" 
 /* ================================ [ MACROS    ] ============================================== */
+#define readl(reg) (*(uint32_t*)(reg))
+#define writel(reg, v) (*(uint32_t*)(reg)) = (v)
+
+#define readb(reg) (*(uint8_t*)(reg))
+#define writeb(reg, v) (*(uint8_t*)(reg)) = (v)
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
-void Can_Init(const Can_ConfigType *Config) {
-}
-
-void Can_DeInit(void) {
-}
-/* @SWS_Can_00233 */
-Std_ReturnType Can_Write(Can_HwHandleType Hth, const Can_PduType *PduInfo) {
-}
-Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType Transition) {
-}
-void Can_MainFunction_Write(void) {
-}
-void Can_MainFunction_Read(void) {
-}
+#endif /* _IO_H */
