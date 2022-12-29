@@ -24,7 +24,7 @@ void BL_JumpToApp(void) {
   application_main();
 #endif
 }
-
+#ifdef BL_FLSDRV_MEMORY_LOW
 boolean BL_IsUpdateRequested(void) {
   boolean r = FALSE;
   uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
@@ -46,6 +46,7 @@ Std_ReturnType BL_GetProgramCondition(Dcm_ProgConditionsType **cond) {
 
   return r;
 }
+#endif
 
 void App_AliveIndicate(void) {
 }
@@ -55,7 +56,7 @@ void User_Init(void) {
 
 void User_MainTask10ms(void) {
 }
-
+#ifdef BL_FLSDRV_MEMORY_LOW
 void App_EnterProgramSession(void) {
   uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
   Dcm_ProgConditionsType *cond = (Dcm_ProgConditionsType *)(BL_FLSDRV_MEMORY_LOW + 4);
@@ -71,7 +72,7 @@ void App_EnterProgramSession(void) {
   reset_main();
   ExitCritical();
 }
-
+#endif
 void Dcm_PerformReset(uint8_t resetType) {
   EnterCritical();
   reset_main();
