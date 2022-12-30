@@ -116,6 +116,7 @@ CFLAGS += -I${KERNEL}/include \
 
 
 
+CFLAGS += -D__ASKAR_OS__
 ifeq ($(schedfifo),yes)
 CFLAGS += -DUSE_SCHED_FIFO
 endif
