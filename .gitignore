@@ -2,3 +2,4 @@ GEN
 ctest/src/ctest*/*
 objs
 out
+Testsuite

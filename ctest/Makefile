@@ -193,7 +193,6 @@ else
 	@echo "#include \"Std_Types.h\"" > $(src-dir)/Types.h
 	@echo "#include \"Os_Cfg.h\"" >> $(src-dir)/Types.h
 	@echo "#include \"kernel.h\"" >> $(src-dir)/Types.h
-	
 endif
 	@echo " >> pre-process for $(TARGET) $(CASE) done"
 

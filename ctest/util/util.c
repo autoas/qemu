@@ -14,6 +14,7 @@
  */
 /* ============================ [ INCLUDES  ] ====================================================== */
 #include "kernel.h"
+#include "Os_Cfg.h"
 #include <stdio.h>
 /* ============================ [ MACROS    ] ====================================================== */
 /* ============================ [ TYPES     ] ====================================================== */
@@ -23,10 +24,12 @@ extern void serial_send_char(char ch);
 void timer_init(void (*cbk)(void));
 void timer_stop(void);
 void vic_setup(void);
+void serial_init();
 void irq_init(void);
 #endif
 extern ISR(ISR2);
 extern ISR(ISR3);
+extern void testInit(void);
 /* ============================ [ DATAS     ] ====================================================== */
 static volatile int isr2Flag;
 static volatile int isr3Flag;
@@ -149,10 +152,14 @@ int main()
 	{
 		vicInitFlag = 1;
 		vic_setup();
+		serial_init();
 		irq_init();
 	}
 
 	timer_init(ISRMainSystemTimer);
+#endif
+#ifdef MTEST
+  testInit();
 #endif
 	StartOS(OSDEFAULTAPPMODE);
 	while(1);

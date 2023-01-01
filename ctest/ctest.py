@@ -64,6 +64,7 @@ def parse():
                 for test in glob.glob('%s/*' % (obj)):
                     if(test[-3:] == 'inc'):
                         continue
+                    test = test.replace(os.sep, '/')
                     cfg.append({'desc': desc, 'target': 'test', 'case': {test: {}}})
                     id += 1
     return cfg
@@ -167,17 +168,22 @@ def fixCfg(cfg, vv):
             cfg[k] = vv[v]
 
 def test(target, case, vv):
-    if(os.name == 'nt'):
-        os.makedirs('src/%s/%s' % (target, case), exist_ok=True)
-    else:
-        RunCommand('mkdir -p src/%s/%s' % (target, case))
+    pdir = 'src/%s/%s' % (target, case)
+    os.makedirs(pdir, exist_ok=True)
     if(target == 'test'):
-        cfg = oil.parse('%s/%s.oil' % (case, target))
+        os.makedirs(pdir+'/GEN', exist_ok=True)
+        with open(pdir+'/test.oil', 'w') as f:
+            f.write('OSEK OSEK {\n')
+            with open('%s/%s.OIL' % (case, target), 'r') as f2:
+                f.write(f2.read())
+            f.write('\n};\n')
+        cfg = { 'OIL': pdir+'/test.oil', 'PATH':['./Testsuite/cpuxx_comyy/inc'] }
+        cfg = Os.fromOIL(pdir, cfg)
     else:
         cfg = oil.parse('%s/etc/%s.oil' % (CTEST, target))
         fixCfg(cfg, vv)
-        genCTEST_CFGH(cfg, 'src/%s/%s' % (target, case))
-    genCfg(cfg, 'src/%s/%s' % (target, case))
+        genCTEST_CFGH(cfg, pdir)
+    genCfg(cfg, pdir)
     RunCommand('make dep-os TARGET=%s CASE=%s' % (target, case))
     RunCommand(cmd='make all TARGET=%s CASE=%s' % (target, case))
     check(target, case)
