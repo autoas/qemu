@@ -140,8 +140,8 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        global TARGET_ARCH
-        self.LIBS += ['Versatilepb', 'LibC', 'OSAL']
+        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell']
+        self.Append(CPPDEFINES=['USE_SHELL'])
         self.Append(CPPDEFINES=['USE_STD_DEBUG',
                     'BL_FLSDRV_MEMORY_LOW=0x00140000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])

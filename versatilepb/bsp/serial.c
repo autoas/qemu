@@ -76,34 +76,12 @@ static int serial0_irq_handler(void *ctx) {
   (void)ch;
   clear_rxe_irq(UART0);
 
-#ifdef USE_OSEKNM
-  if (ch == 'x') {
-    static int sleeped = TRUE;
-    if (FALSE == sleeped) {
-      ASLOG(INFO, ("OSEKNM goto sleep\n"));
-      GotoMode(0, NM_BusSleep);
-      sleeped = TRUE;
-    } else {
-      ASLOG(INFO, ("OSEKNM goto wakeup\n"));
-      GotoMode(0, NM_Awake);
-      sleeped = FALSE;
-    }
+#ifdef USE_SHELL
+  void Shell_Input(uint8_t ch);
+  if (ch == '\t') {
+    ch = '\n';
   }
-#endif
-
-#ifdef USE_CANNM
-  if (ch == 'x') {
-    static int requested = FALSE;
-    if (FALSE == requested) {
-      ASLOG(INFO, ("CanNm request\n"));
-      CanNm_NetworkRequest(0);
-      requested = TRUE;
-    } else {
-      ASLOG(INFO, ("CanNm release\n"));
-      CanNm_NetworkRelease(0);
-      requested = FALSE;
-    }
-  }
+  Shell_Input(ch);
 #endif
   return 0;
 }

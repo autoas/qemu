@@ -21,6 +21,15 @@ SECTIONS {
       . = ALIGN(4);
       __data_start__ = .;
       *(.data*)
+      . = ALIGN(4);
+      __ssymtab_start = .;
+      KEEP(*(ShellCmdTab))
+      __ssymtab_end = .;
+      . = ALIGN(4);
+      __devtab_start = .;
+      KEEP(*(DeviceTab))
+      __devtab_end = .;
+      . = ALIGN(4);
       __data_end__ = .;
    } > RAM
 
