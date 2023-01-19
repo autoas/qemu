@@ -7,6 +7,7 @@
 #include "x86.h"
 #include <stdio.h>
 #include "Std_Critical.h"
+#include "Std_Debug.h"
 /* ================================ [ MACROS    ] ============================================== */
 /* Hardware interrupts */
 #define NR_IRQ 16 /* Number of IRQs */
@@ -66,15 +67,15 @@ void disable_irq(unsigned int irq) {
 }
 
 imask_t Std_EnterCritical(void) {
-  imask_t imask = 0;
+  imask_t imask;
 
-  __asm__ __volatile__("cli");
+  __asm__ __volatile__("pushfl ; popl %0 ; cli" : "=g"(imask) : : "memory");
 
   return imask;
 }
 
 void Std_ExitCritical(imask_t imask) {
-  __asm__ __volatile__("sti");
+  __asm__ __volatile__("pushl %0 ; popfl" : : "g"(imask) : "memory", "cc");
 }
 
 void init_8259A(void) {

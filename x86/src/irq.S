@@ -119,10 +119,10 @@ save:
 .global restart
 .type restart,@function
 restart:
-  mov  $(RunningVar), %esp
+  mov  RunningVar(,1), %esp
   lldt  P_LDT_SEL(%esp)
   lea  P_STACKTOP(%esp), %eax 
-  mov  %eax, (g_Tss + TSS3_S_SP0)
+  mov  %eax, 4+g_Tss(,1)
 restart_reenter:
   decl k_reenter(,1)
   pop  %gs

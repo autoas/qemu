@@ -9,6 +9,7 @@
 .global outb
 outb:
   mov 4(%esp), %dx    /* port */
+  and $0xFFFF, %edx
   mov 8(%esp), %al    /* value */
   outb %al, %dx
   nop
