@@ -3,7 +3,7 @@
  * Copyright (C) 2023 Parai Wang <parai@foxmail.com>
  */
 
-.section .text, "ax"
+.section .text
 
 /* void outb(uint32_t port, uint8_t value) */
 .global outb

@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "x86.h"
 #include <string.h>
+#include "Std_Debug.h"
 /* ================================ [ MACROS    ] ============================================== */
 #define LDT_SIZE 2
 #define GDT_SIZE 256
@@ -51,6 +52,8 @@ void hwint13();
 void hwint14();
 void hwint15();
 void sys_call();
+
+uint32_t seg2phys(uint16_t seg);
 /* ================================ [ DATAS     ] ============================================== */
 mmu_descriptor_t g_Gdt[GDT_SIZE];
 mmu_descinfo_t g_GdtInfo = {GDT_SIZE * sizeof(mmu_descriptor_t) - 1, g_Gdt};
@@ -59,17 +62,6 @@ mmu_gate_t g_Idt[IDT_SIZE];
 mmu_gateinfo_t g_IdtInfo = {IDT_SIZE * sizeof(mmu_gate_t) - 1, g_Idt};
 tss_t g_Tss;
 /* ================================ [ LOCALS    ] ============================================== */
-static void init_descriptor(mmu_descriptor_t *p_desc, uint32_t base, uint32_t limit,
-                            uint16_t attribute) {
-  p_desc->limit_low = limit & 0x0FFFF;     // 段界限 1		(2 字节)
-  p_desc->base_low = base & 0x0FFFF;       // 段基址 1		(2 字节)
-  p_desc->base_mid = (base >> 16) & 0x0FF; // 段基址 2		(1 字节)
-  p_desc->attr1 = attribute & 0xFF;        // 属性 1
-  p_desc->limit_high_attr2 =
-    ((limit >> 16) & 0x0F) | ((attribute >> 8) & 0xF0); // 段界限 2 + 属性 2
-  p_desc->base_high = (base >> 24) & 0x0FF;             // 段基址 3		(1 字节)
-}
-
 static void init_idt_desc(unsigned char vector, uint8_t desc_type, void (*handler)(void),
                           unsigned char privilege) {
   mmu_gate_t *p_gate = &g_Idt[vector];
@@ -81,15 +73,9 @@ static void init_idt_desc(unsigned char vector, uint8_t desc_type, void (*handle
   p_gate->offset_high = (base >> 16) & 0xFFFF;
 }
 
-static uint32_t seg2phys(uint16_t seg) {
-  mmu_descriptor_t *p_dest = &g_Gdt[seg >> 3];
-
-  return (p_dest->base_high << 24) | (p_dest->base_mid << 16) | (p_dest->base_low);
-}
-
 static void init_prot(void) {
   init_8259A();
-#if 0
+
   // 全部初始化成中断门(没有陷阱门)
   init_idt_desc(INT_VECTOR_DIVIDE, DA_386IGate, divide_error, PRIVILEGE_KRNL);
   init_idt_desc(INT_VECTOR_DEBUG, DA_386IGate, single_step_exception, PRIVILEGE_KRNL);
@@ -124,9 +110,25 @@ static void init_prot(void) {
   init_idt_desc(INT_VECTOR_IRQ8 + 6, DA_386IGate, hwint14, PRIVILEGE_KRNL);
   init_idt_desc(INT_VECTOR_IRQ8 + 7, DA_386IGate, hwint15, PRIVILEGE_KRNL);
   init_idt_desc(INT_VECTOR_SYS_CALL, DA_386IGate, sys_call, PRIVILEGE_USER);
-#endif
 }
 /* ================================ [ FUNCTIONS ] ============================================== */
+uint32_t seg2phys(uint16_t seg) {
+  mmu_descriptor_t *p_dest = &g_Gdt[seg >> 3];
+
+  return (p_dest->base_high << 24) | (p_dest->base_mid << 16) | (p_dest->base_low);
+}
+
+void init_descriptor(mmu_descriptor_t *p_desc, uint32_t base, uint32_t limit,
+                            uint16_t attribute) {
+  p_desc->limit_low = limit & 0x0FFFF;     // 段界限 1		(2 字节)
+  p_desc->base_low = base & 0x0FFFF;       // 段基址 1		(2 字节)
+  p_desc->base_mid = (base >> 16) & 0x0FF; // 段基址 2		(1 字节)
+  p_desc->attr1 = attribute & 0xFF;        // 属性 1
+  p_desc->limit_high_attr2 =
+    ((limit >> 16) & 0x0F) | ((attribute >> 8) & 0xF0); // 段界限 2 + 属性 2
+  p_desc->base_high = (base >> 24) & 0x0FF;             // 段基址 3		(1 字节)
+}
+
 void cstart(void) {
   terminal_initialize();
   serial_init();
@@ -142,4 +144,37 @@ void cstart(void) {
   init_descriptor(&g_Gdt[INDEX_TSS], vir2phys(seg2phys(SELECTOR_KERNEL_DS), &g_Tss),
                   sizeof(g_Tss) - 1, DA_386TSS);
   g_Tss.iobase = sizeof(g_Tss); /* 没有I/O许可位图 */
+}
+
+void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags) {
+  static const char err_description[][64] = {
+    "#DE Divide Error",
+    "#DB RESERVED",
+    "—  NMI Interrupt",
+    "#BP Breakpoint",
+    "#OF Overflow",
+    "#BR BOUND Range Exceeded",
+    "#UD Invalid Opcode (Undefined Opcode)",
+    "#NM Device Not Available (No Math Coprocessor)",
+    "#DF Double Fault",
+    "    Coprocessor Segment Overrun (reserved)",
+    "#TS Invalid TSS",
+    "#NP Segment Not Present",
+    "#SS Stack-Segment Fault",
+    "#GP General Protection",
+    "#PF Page Fault",
+    "—  (Intel reserved. Do not use.)",
+    "#MF x87 FPU Floating-Point Error (Math Fault)",
+    "#AC Alignment Check",
+    "#MC Machine Check",
+    "#XF SIMD Floating-Point Exception",
+  };
+
+  printf("Exception! --> %s\n"
+         "EFLAGS: 0x%08X "
+         "CS: 0x%08X "
+         "EIP: 0x%08X "
+         "Error code: %d\n",
+         err_description[vec_no], eflags, cs, eip, err_code);
+  asAssert(0);
 }

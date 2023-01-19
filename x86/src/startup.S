@@ -20,7 +20,7 @@
 .extern __bss_end__
 
 /* the system entry */
-.globl _start
+.global _start
 _start:
     jmp multiboot_entry
 
@@ -37,7 +37,7 @@ multiboot_header:
     .long   -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
 multiboot_entry:
-    movl    $(__bss_end__+4096),%esp
+    movl    $(__bss_end__+4096), %esp
 
     /* reset eflags.  */
     pushl   $0

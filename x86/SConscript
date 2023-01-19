@@ -4,7 +4,11 @@ CWD = GetCurrentDir()
 
 Import('BUILD_DIR')
 
+generate(Glob('config/*.json'))
+
 objs = Glob('src/*.c') + Glob('src/*.S')
+
+Os_Cfg = Glob('config/GEN/Os*.c')
 
 
 @register_application
@@ -15,9 +19,10 @@ class ApplicationX86(Application):
         self.LIBS += ['LibC', 'Shell']
         self.CPPPATH += ['$INFRAS']
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_SHELL'])
-        self.Append(CPPPATH=['%s/include' % (CWD)])
+        self.Append(CPPPATH=['%s/include' % (CWD), '%s/src' % (CWD)])
         self.Append(LINKFLAGS=['-static', '-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '"%s/x86.map"' % (BUILD_DIR)])
+        self.SelectOS(arch='x86', config=Os_Cfg, CPPDEFINES=['OS_STK_SIZE_SCALER=4', 'USE_OSAL'])
         self.source = objs
 
 
