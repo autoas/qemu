@@ -14,9 +14,9 @@
 .extern    clock_handler
 
 .extern    g_Tss
-.extern    g_irq_table
 .extern    sys_call_table
 .extern    __bss_end__
+.extern    handle_irq
 
 #define hwint_master(name, irqno) \
   .align 2; \
@@ -32,7 +32,7 @@
     outb   %al, $INT_M_CTL; \
     sti; /* enable interrupt */ \
     push    $irqno; \
-    call    (g_irq_table + 4 * irqno); \
+    call    handle_irq; \
     pop    %ecx; \
     cli; \
     /* enable current interrupt */ \
@@ -55,7 +55,7 @@
     outb   %al, $INT_S_CTL; \
     sti; /* enable interrupt */ \
     push    $irqno; \
-    call    (g_irq_table + 4 * irqno); \
+    call    handle_irq; \
     pop    %ecx; \
     cli; \
     /* enable current interrupt */ \
@@ -106,10 +106,10 @@ save:
   mov  %esp, %esi /* esi = Process Table Start Address */
 
   incl k_reenter(,1)
-  cmp $0, k_reenter(,1)
+  cmp  $0, k_reenter(,1)
   jne  .1
   mov  $(__bss_end__+4096), %esp
-  push  restart
+  push restart
   jmp  RETADR(%esi)
 .1:
   push  restart_reenter
@@ -137,7 +137,22 @@ restart_reenter:
 .global sys_call
 .type sys_call,@function
 sys_call:
-	ret
+  call save
+
+  push RunningVar(,1)
+
+  // sti
+
+  push %ecx
+  push %ebx
+  call *sys_call_table(,%eax,4)
+  add $(4*3), %esp
+
+  mov %eax, /* EAXREG(44) - P_STACKBASE(0) */ EAXREG(%esi)
+
+  // cli
+
+  ret
 
 hwexception(divide_error, 0)
 hwexception(single_step_exception, 1)
@@ -165,15 +180,15 @@ exception:
 .global DisableInterrupt
 .type DisableInterrupt,@function
 DisableInterrupt:
-		cli
-		ret
+    cli
+    ret
 
 .align 2
 .global EnableInterrupt
 .type EnableInterrupt,@function
 EnableInterrupt:
-		sti
-		ret
+    sti
+    ret
 
 #define INT_VECTOR_SYS_CALL  0x90
 #define _NR_dispatch         0

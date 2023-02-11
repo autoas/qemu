@@ -120,3 +120,11 @@ void init_clock(void) {
 
   serial_enable_rx();
 }
+
+void handle_irq(int irqno) {
+  if ((irqno < NR_IRQ) && (NULL != g_irq_table[irqno])) {
+    g_irq_table[irqno](irqno);
+  } else {
+    asAssert(0);
+  }
+}
