@@ -4,8 +4,8 @@ set LL_DL=64
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbFlashDriver
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanApp
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBL
-build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1048576
-build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
+build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1043456 -S crc32
+build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096  -S crc32
 
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBLRun
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
@@ -18,10 +18,12 @@ from building import *
 
 generate(Glob('config/*.json'))
 
+
 @register_compiler
 def CompilerQemuVersatilepbGCC(**kwargs):
     env = CreateCompiler('ArmGCC')
     return env
+
 
 for sc in Glob('*/SConscript'):
     SConscript(sc)
@@ -37,11 +39,15 @@ objs = Glob('*/*.c')
 
 objsAsm = Glob('*/*.S')
 
+objsPci = Glob('bsp/pci/*.c')
+
 Os_Cfg = Glob('config/GEN/Os*.c')
+
 
 @register_library
 class LibraryVersatilepb(Library):
     def config(self):
+        self.include = '%s/bsp' % (CWD)
         self.Append(CPPDEFINES=['OS_TICKS_PER_SECOND=100'])
         self.LIBS = ['QemuArmInt', 'gcc']
         self.CPPPATH = ['$INFRAS']
@@ -104,7 +110,7 @@ class ApplicationVersatilepbCanBLRun(Application):
     def build(self):
         qemu = Qemu(arch='arm')
         target = '%s/VersatilepbCanBL' % (BUILD_DIR[:-3])
-        if(IsPlatformWindows()):
+        if (IsPlatformWindows()):
             target = target + '.exe'
         qemu.Run('-m 128 -M versatilepb -kernel %s' % (target))
 
@@ -140,10 +146,10 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell']
-        self.Append(CPPDEFINES=['USE_SHELL'])
-        self.Append(CPPDEFINES=['USE_STD_DEBUG',
-                    'BL_FLSDRV_MEMORY_LOW=0x00140000'])
+        self.source += objsPci
+        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell', 'Pci']
+        self.Append(CPPDEFINES=['USE_SHELL', 'USE_PCI'])
+        self.Append(CPPDEFINES=['USE_STD_DEBUG', 'BL_FLSDRV_MEMORY_LOW=0x00140000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
@@ -168,6 +174,6 @@ class ApplicationVersatilepbCanAppRun(Application):
     def build(self):
         qemu = Qemu(arch='arm', CAN0=True)
         target = '%s/VersatilepbCanApp' % (BUILD_DIR[:-3])
-        if(IsPlatformWindows()):
+        if (IsPlatformWindows()):
             target = target + '.exe'
         qemu.Run('-m 128 -M versatilepb -kernel %s' % (target))

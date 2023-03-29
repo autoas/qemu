@@ -2,6 +2,10 @@ MEMORY
 {
    FLASH        (rx)   : ORIGIN = 0x00040000, LENGTH = 1024K
    RAM          (rwx)  : ORIGIN = 0x00140000, LENGTH = 127M
+   /* This PCIIO PCINP PCIP is for versatilepb */
+   PCIIO        (rw)   : ORIGIN = 0x43000000, LENGTH = 16M
+   PCINP        (rw)   : ORIGIN = 0x50000000, LENGTH = 256M
+   PCIP         (rw)   : ORIGIN = 0x60000000, LENGTH = 256M
 }
 
 ENTRY(_start)
@@ -39,5 +43,23 @@ SECTIONS {
       *(.bss*)
    } > RAM
    __bss_end = .;
+
+   .pciio :
+   {
+      *(.pciio)
+      *(.pciio.*)
+   } > PCIIO
+
+   .pcinp :
+   {
+      *(.pcinp)
+      *(.pcinp.*)
+   } > PCINP
+
+   .pcip :
+   {
+      *(.pcip)
+      *(.pcip.*)
+   } > PCIP
 }
 
