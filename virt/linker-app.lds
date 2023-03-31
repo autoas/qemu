@@ -17,12 +17,22 @@ SECTIONS
     . = ALIGN(8);
     *(.text*)
   } > RAM
-    _etext = .;
+  _etext = .;
 
   .data : {
     . = ALIGN(8);
+    __data_start__ = .;
     *(.data*)
     . = ALIGN(8);
+    __ssymtab_start = .;
+    KEEP(*(ShellCmdTab))
+    __ssymtab_end = .;
+    . = ALIGN(8);
+    __devtab_start = .;
+    KEEP(*(DeviceTab))
+    __devtab_end = .;
+    . = ALIGN(8);
+    __data_end__ = .;
     *(.rodata*)
   } > RAM
 

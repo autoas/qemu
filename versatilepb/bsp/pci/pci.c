@@ -2,13 +2,11 @@
  * SSAS - Simple Smart Automotive Software
  * Copyright (C) 2017-2023 Parai Wang <parai@foxmail.com>
  */
-#ifdef USE_PCI
 /* http://infocenter.arm.com/help/topic/com.arm.doc.dui0224i/DUI0224I_realview_platform_baseboard_for_arm926ej_s_ug.pdf
  * 3.15 PCI interface  p141
  * 4.17 PCI controller p241
  */
 /* ================================ [ INCLUDES  ] ============================================== */
-#define IO_VALUE_FIRST
 #include "Std_Types.h"
 #include "Std_Debug.h"
 #include "pci_core.h"
@@ -111,28 +109,6 @@ static int versatile_pci_probe(void) {
 }
 
 /* ================================ [ FUNCTIONS ] ============================================== */
-uint8_t inb(uint32_t p) {
-  return readb(p);
-}
-uint16_t inw(uint32_t p) {
-  return readw(p);
-}
-uint32_t inl(uint32_t p) {
-  return readl(p);
-}
-
-void outb(uint32_t p, uint8_t v) {
-  writeb(p, v);
-}
-
-void outw(uint32_t p, uint16_t v) {
-  writew(p, v);
-}
-
-void outl(uint32_t p, uint32_t v) {
-  writel(p, v);
-}
-
 int pci_init(void) {
   int rv;
 
@@ -215,7 +191,6 @@ void pci_write_config_reg8(pci_reg *reg, uint8 offset, const uint8 value) {
   pci_generic_config_write(reg->bus, reg->fn, offset | (reg->dev << 11), 1, value);
 }
 
-#ifndef USE_STDRT
 int pci_disable_IRQ_line(uint32 irq) {
   irq_disable_line(irq);
   return 0;
@@ -227,24 +202,10 @@ int pci_enable_IRQ_line(uint32 irq) {
 int pci_sys_set_irq_handle(uint32 irq, void (*handle)(void)) {
   return irq_install_isr(irq, (isr_callback_t)handle);
 }
-#else
-int pci_disable_IRQ_line(uint32 irq) {
-  rt_hw_interrupt_mask(irq);
-  return 0;
-}
-int pci_enable_IRQ_line(uint32 irq) {
-  rt_hw_interrupt_unmask(irq);
-  return 0;
-}
-int pci_sys_set_irq_handle(uint32 irq, void (*handle)(void)) {
-  return rt_hw_interrupt_install(irq, handle, RT_NULL, "pci");
-}
-#endif
+
 int pci_sys_irq_set_level_trigger(uint32 irq) {
   return 1;
 }
 int pci_sys_irq_set_edge_trigger(uint32 irq) {
   return 1;
 }
-
-#endif

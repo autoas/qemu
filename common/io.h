@@ -1,6 +1,6 @@
 /**
  * SSAS - Simple Smart Automotive Software
- * Copyright (C) 2021 Parai Wang <parai@foxmail.com>
+ * Copyright (C) 2021-2023 Parai Wang <parai@foxmail.com>
  *
  */
 #ifndef _IO_H
@@ -21,4 +21,11 @@
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
+uint8_t inb(uint32_t p);
+uint16_t inw(uint32_t p);
+uint32_t inl(uint32_t p);
+
+void outb(uint32_t p, uint8_t v);
+void outw(uint32_t p, uint16_t v);
+void outl(uint32_t p, uint32_t v);
 #endif /* _IO_H */

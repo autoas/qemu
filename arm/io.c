@@ -1,25 +1,34 @@
 /**
  * SSAS - Simple Smart Automotive Software
- * Copyright (C) 2021 Parai Wang <parai@foxmail.com>
+ * Copyright (C) 2023 Parai Wang <parai@foxmail.com>
+ *
  */
-
 /* ================================ [ INCLUDES  ] ============================================== */
-#include "Mcu.h"
-#include "Std_Timer.h"
+#include "io.h"
 /* ================================ [ MACROS    ] ============================================== */
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
-extern void Irq_Init(void);
-extern void uart_init(void);
-extern void Os_PortStartSysTick(void);
-
-void DisableInterrupt(void);
-void EnableInterrupt(void);
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* ================================ [ FUNCTIONS ] ============================================== */
-void Mcu_Init(const Mcu_ConfigType *ConfigPtr) {
-  DisableInterrupt();
-  Irq_Init();
-  uart_init();
+uint8_t inb(uint32_t p) {
+  return readb(p);
+}
+uint16_t inw(uint32_t p) {
+  return readw(p);
+}
+uint32_t inl(uint32_t p) {
+  return readl(p);
+}
+
+void outb(uint32_t p, uint8_t v) {
+  writeb(p, v);
+}
+
+void outw(uint32_t p, uint16_t v) {
+  writew(p, v);
+}
+
+void outl(uint32_t p, uint32_t v) {
+  writel(p, v);
 }

@@ -56,8 +56,9 @@ void User_Init(void) {
 
 void User_MainTask10ms(void) {
 }
-#ifdef BL_FLSDRV_MEMORY_LOW
+
 void App_EnterProgramSession(void) {
+#ifdef BL_FLSDRV_MEMORY_LOW
   uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
   Dcm_ProgConditionsType *cond = (Dcm_ProgConditionsType *)(BL_FLSDRV_MEMORY_LOW + 4);
   EnterCritical();
@@ -71,8 +72,9 @@ void App_EnterProgramSession(void) {
   cond->ResponseRequired = TRUE;
   reset_main();
   ExitCritical();
-}
 #endif
+}
+
 void Dcm_PerformReset(uint8_t resetType) {
   EnterCritical();
   reset_main();

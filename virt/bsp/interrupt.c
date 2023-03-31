@@ -433,7 +433,6 @@ void Os_PortIsrHandler(void) {
   EnterCritical();
   rc = gic_v3_find_pending_irq(&irq);
   if (rc == IRQ_FOUND) {
-
     gicd_disable_int(irq); /* Mask this irq */
     gic_v3_eoi(irq);       /* Send EOI for this irq line */
     if (isr_pc[irq] != NULL) {
@@ -459,6 +458,6 @@ void __attribute__((weak)) Os_PortException(long exception, void *sp, long esr) 
 void Ipc_KickTo(int cpu, int irqno) {
   asAssert(irqno < 16);
 
-  gicv3_write_sgi1r((1<<(cpu+24)) | irqno);
+  gicv3_write_sgi1r((1 << (cpu + 24)) | irqno);
   isb();
 }

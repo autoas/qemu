@@ -1,3 +1,6 @@
+'''
+scons --cpl=Arm64GCC --app=Virt
+'''
 from building import *
 
 CWD = GetCurrentDir()
@@ -6,26 +9,38 @@ Import('BUILD_DIR')
 
 generate(Glob('config/*.json'))
 
-objs = Glob('*/*.c') + Glob('*.c')
+objs = Glob('*/*.c')
 objsAsm = Glob('*/*.S')
+objsPci = Glob('bsp/pci/*.c')
 Os_Cfg = Glob('config/GEN/Os*.c')
 
 
+ApplicationCanApp = query_application('CanApp')
+
 @register_application
-class ApplicationVirt(Application):
+class ApplicationVirt(ApplicationCanApp):
     compiler = 'Arm64GCC'
 
-    def config(self):
-        self.LIBS = ['LibC', 'StdTimer', 'Arm']
+    def platform_config(self):
+        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'Pci', 'OSAL', 'Shell']
         self.CPPPATH += ['$INFRAS']
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/virtbl.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
                       CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
+                                  'USE_SHELL', 'USE_PCI', 'USE_OSAL',
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
-        self.source = objs
+        self.source += objs + objsPci
+
+    def config(self):
+        super().config()
+        for libName in ['Dem', 'Fls', 'Fee', 'NvM', 'Eep', 'Ea']:
+            if libName in self.LIBS:
+                self.LIBS.remove(libName)
+            macro = 'USE_%s' % (libName.upper())
+            self.Remove(CPPDEFINES=macro)
 
 
 @register_application
@@ -36,6 +51,7 @@ class ApplicationVirtRun(Application):
     def build(self):
         qemu = Qemu(arch='arm64')
         target = '%s/Virt' % (BUILD_DIR[:-3])
-        if(IsPlatformWindows()):
+        if (IsPlatformWindows()):
             target = target + '.exe'
-        qemu.Run('-M virt -cpu cortex-a57 -smp 2 -kernel %s' % (target))
+        params = '-netdev user,id=net0 -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
+        qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

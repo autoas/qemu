@@ -15,6 +15,6 @@ static spinlock_t lock;
 /* ================================ [ FUNCTIONS ] ============================================== */
 void smp_boot_secondary(int cpu, secondary_entry_fn entry) {
   spin_lock(&lock);
-  int err = psci_cpu_on((unsigned long)cpu, (unsigned long)entry);
+  psci_cpu_on((unsigned long)cpu, (unsigned long)entry);
   spin_unlock(&lock);
 }
