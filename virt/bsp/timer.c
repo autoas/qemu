@@ -6,6 +6,7 @@
 #include "Std_Types.h"
 #include "Std_Timer.h"
 #include "smp.h"
+#include "interrupt.h"
 /* ================================ [ MACROS    ] ============================================== */
 #define TIMER_IRQ (27)
 #define CNTV_CTL_ENABLE (1 << 0)  /* Enables the timer */
@@ -14,7 +15,6 @@
 
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
-extern void Irq_Install(int irqno, void (*handler)(void), int oncpu);
 /* ================================ [ DATAS     ] ============================================== */
 /* ================================ [ LOCALS    ] ============================================== */
 /* CNTV_CTL_EL0, Counter-timer Virtual Timer Control register
