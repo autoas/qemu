@@ -9,12 +9,15 @@
 #include "Std_Types.h"
 #include "Std_Critical.h"
 #include "Std_Debug.h"
+#include <string.h>
 #include "smp.h"
 #include "io.h"
 #include <rthw.h>
 #include <rtthread.h>
+#include "interrupt.h"
 #include "gicv2.h"
 #include "gicv3.h"
+#include "kernel.h"
 /* ================================ [ MACROS    ] ============================================== */
 #define isb() asm volatile("isb" : : : "memory")
 
@@ -43,11 +46,13 @@
 #define GIC_GICD_ICFGR_EDGE (0x2)  /* edge-triggered */
 
 /* ================================ [ TYPES     ] ============================================== */
-typedef int32_t irq_no; /* IRQ no */
-
-void (*isr_pc[256])(void);
+typedef struct {
+  Irq_IsrFncType isrFnc;
+  void *param;
+} Irq_IsrType;
 /* ================================ [ DECLARES  ] ============================================== */
 /* ================================ [ DATAS     ] ============================================== */
+static Irq_IsrType lIrqIsrs[256];
 /* ================================ [ LOCALS    ] ============================================== */
 static void gicv3_write_sgi1r(uint64_t val) {
 #if 0
@@ -87,6 +92,7 @@ void Irq_Init(void) {
 #endif
   rt_uint64_t gic_irq_start;
 
+  memset(lIrqIsrs, 0, sizeof(lIrqIsrs));
   /* initialize ARM GIC */
   gic_dist_base = platform_get_gic_dist_base();
   gic_cpu_base = platform_get_gic_cpu_base();
@@ -104,8 +110,9 @@ void Irq_Init(void) {
   arm_gic_dump_type(0);
 }
 
-void Irq_Install(int irqno, void (*handler)(void), int oncpu) {
-  isr_pc[irqno] = handler;
+void Irq_Install(int irqno, Irq_IsrFncType isrFnc, void *param, int oncpu) {
+  lIrqIsrs[irqno].isrFnc = isrFnc;
+  lIrqIsrs[irqno].param = param;
   arm_gic_set_configuration(0, irqno, GIC_GICD_ICFGR_EDGE);
   arm_gic_set_priority(0, irqno, 0);
   arm_gic_set_cpu(0, irqno, (1 << oncpu));
@@ -116,18 +123,18 @@ void Irq_Install(int irqno, void (*handler)(void), int oncpu) {
 void Irq_UnInstall(int irqno) {
   arm_gic_clear_pending_irq(0, irqno);
   arm_gic_mask(0, irqno);
-  isr_pc[irqno] = NULL;
+  lIrqIsrs[irqno].isrFnc = NULL;
 }
 
 void Os_PortIsrHandler(void) {
-  irq_no irq;
+  int irq;
 
   EnterCritical();
   irq = arm_gic_get_active_irq(0);
   arm_gic_mask(0, irq);
   arm_gic_ack(0, irq);
-  if (isr_pc[irq] != NULL) {
-    isr_pc[irq]();
+  if (lIrqIsrs[irq].isrFnc != NULL) {
+    lIrqIsrs[irq].isrFnc(irq, lIrqIsrs[irq].param);
     arm_gic_umask(0, irq);
   } else {
     ASLOG(ERROR, ("GIC: uninstalled IRQ %d on CPU%d\n", irq, smp_processor_id()));
@@ -149,4 +156,29 @@ void Ipc_KickTo(int cpu, int irqno) {
 
   gicv3_write_sgi1r((1 << (cpu + 24)) | irqno);
   isb();
+}
+
+int rt_hw_cpu_id(void) {
+  return smp_processor_id();
+}
+
+void rt_hw_interrupt_mask(int vector) {
+  arm_gic_mask(0, vector);
+}
+
+void rt_hw_interrupt_umask(int vector) {
+  arm_gic_umask(0, vector);
+}
+
+rt_isr_handler_t rt_hw_interrupt_install(int vector, rt_isr_handler_t handler, void *param,
+                                         const char *name) {
+  rt_isr_handler_t isrFnc = lIrqIsrs[vector].isrFnc;
+  Irq_Install(vector, handler, param, smp_processor_id());
+  return isrFnc;
+}
+
+
+void rt_thread_yield(void)
+{
+  Schedule();
 }

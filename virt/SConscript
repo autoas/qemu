@@ -1,4 +1,5 @@
 '''
+set DISABLE_VFS_LWEXT4=YES
 scons --cpl=Arm64GCC --app=Virt
 '''
 from building import *
@@ -36,15 +37,16 @@ class ApplicationVirt(ApplicationCanApp):
     compiler = 'Arm64GCC'
 
     def platform_config(self):
-        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'Pci', 'OSAL', 'Shell', 'VirtRTT']
+        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'Pci', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
         self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/virtbl.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
                       CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
-                                  'USE_SHELL', 'USE_PCI', 'USE_OSAL',
-                                  'BSP_USING_GIC', 'BSP_USING_GICV2',
+                                  'USE_SHELL', 'USE_PCI', 'USE_OSAL', 'USE_VFS',
+                                  'BSP_USING_GIC', 'BSP_USING_GICV2', 'RT_USING_CACHE',
+                                  'HEAP_SIZE=%s' % (10*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
         self.source += objs + objsPci
@@ -68,5 +70,9 @@ class ApplicationVirtRun(Application):
         target = '%s/Virt' % (BUILD_DIR[:-3])
         if (IsPlatformWindows()):
             target = target + '.exe'
+        img = '%s/asblk0.img' % (RootDir)
+        qemu.CreateDiskImg(img)
         params = '-netdev user,id=net0 -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
+        params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
+        params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

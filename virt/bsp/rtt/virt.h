@@ -96,4 +96,6 @@ rt_inline rt_ubase_t platform_get_gic_its_base(void)
     return GIC_PL500_ITS_PPTR;
 }
 
+void virt_vio_init(void);
+
 #endif

@@ -42,7 +42,7 @@ void __putchar(char ch) {
   uart_putc(ch);
 }
 
-void uart_isr_handler(void) {
+void uart_isr_handler(int irqno, void *param) {
   int ch = uart_getc();
   if (ch != -1) {
 #ifdef USE_SHELL
@@ -63,5 +63,5 @@ void uart_init(void) {
   /* enable rx irq */
   u32v = readl(UART0IMSC);
   writel(UART0IMSC, u32v | UARTIMSC_RXIM);
-  Irq_Install(UART0_IRQNUM, uart_isr_handler, smp_processor_id());
+  Irq_Install(UART0_IRQNUM, uart_isr_handler, NULL, smp_processor_id());
 }

@@ -89,7 +89,7 @@ std_time_t Std_GetTime(void) {
   return OsTickCounter * (1000000 / OS_TICKS_PER_SECOND);
 }
 
-static void timer_isr_handler(void) {
+static void timer_isr_handler(int irqno, void *param) {
   uint64_t ticks, current_cnt;
   uint32_t cntfrq;
 
@@ -109,7 +109,7 @@ void Os_PortStartSysTick(void) {
   uint64_t ticks, current_cnt;
   uint32_t cntfrq;
 
-  Irq_Install(TIMER_IRQ, timer_isr_handler, smp_processor_id());
+  Irq_Install(TIMER_IRQ, timer_isr_handler, NULL, smp_processor_id());
 
   cntfrq = raw_read_cntfrq_el0();
   ticks = cntfrq / OS_TICKS_PER_SECOND;
