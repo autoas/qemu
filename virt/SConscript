@@ -72,7 +72,9 @@ class ApplicationVirtRun(Application):
             target = target + '.exe'
         img = '%s/asblk0.img' % (RootDir)
         qemu.CreateDiskImg(img)
-        params = '-netdev user,id=net0 -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
+        params = '-netdev type=tap,id=net0,ifname=tap0,script=no,downscript=no'
+        #params = '-netdev user,id=net0'
+        params += ' -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
         params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
         params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

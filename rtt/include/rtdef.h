@@ -1215,6 +1215,8 @@ enum rt_device_class_type
 /* mtd interface device*/
 #define RT_DEVICE_CTRL_MTD_FORMAT       (RT_DEVICE_CTRL_BASE(MTD) + 1)              /**< format a MTD device */
 
+#define NIOCTL_GADDR        0x01
+
 typedef struct rt_device *rt_device_t;
 
 #ifdef RT_USING_DEVICE_OPS

@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 #define rt_memset memset
+#define rt_memcpy memcpy
 
 #define rt_malloc malloc
 #define rt_free free

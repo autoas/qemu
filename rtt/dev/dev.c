@@ -9,10 +9,12 @@
 #include <string.h>
 /* ================================ [ MACROS    ] ============================================== */
 #define AS_LOG_RTDEV 0
+#define AS_LOG_RTDEVI 2
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
 /* ================================ [ DATAS     ] ============================================== */
 static rt_device_t lRtDevBlk0 = NULL;
+static rt_device_t lRtDevNet0 = NULL;
 /* ================================ [ LOCALS    ] ============================================== */
 static int dev_asblk_open(const device_t *device) {
   int r = 0;
@@ -97,12 +99,70 @@ static int dev_asblk_ctrl(const device_t *device, int cmd, void *args) {
 
   return ercd;
 }
+
+static int dev_asnet_open(const device_t *device) {
+  int r = 0;
+  rt_device_t dev = *(rt_device_t *)device->priv;
+
+  if (NULL != dev->ops->init) {
+    r = dev->ops->init(dev);
+  }
+
+  return r;
+}
+
+static int dev_asnet_close(const device_t *device) {
+  int r = 0;
+  rt_device_t dev = *(rt_device_t *)device->priv;
+
+  if (NULL != dev->ops->close) {
+    r = dev->ops->close(dev);
+  }
+
+  return r;
+}
+
+static int dev_asnet_read(const device_t *device, size_t pos, void *buffer, size_t size) {
+  int r = 0;
+  rt_device_t dev = *(rt_device_t *)device->priv;
+
+  r = dev->ops->read(dev, pos, buffer, size);
+
+  return r;
+}
+
+static int dev_asnet_write(const device_t *device, size_t pos, const void *buffer, size_t size) {
+  int r = 0;
+  rt_device_t dev = *(rt_device_t *)device->priv;
+
+  r = dev->ops->write(dev, pos, buffer, size);
+
+  return r;
+}
+
+static int dev_asnet_ctrl(const device_t *device, int cmd, void *args) {
+  rt_device_t dev = *(rt_device_t *)device->priv;
+  int ercd = 0;
+
+  switch (cmd) {
+  case DEVICE_CTRL_GET_MAC_ADDR:
+    ercd = dev->ops->control(dev, NIOCTL_GADDR, args);
+    break;
+  default:
+    ercd = EINVAL;
+    break;
+  }
+
+  return ercd;
+}
 /* ================================ [ FUNCTIONS ] ============================================== */
 rt_err_t rt_device_register(rt_device_t dev, const char *name, rt_uint16_t flags) {
   rt_err_t r = RT_EOK;
-  ASLOG(RTDEV, ("register %s dev=%p flags = %X\n", name, dev, flags));
+  ASLOG(RTDEVI, ("register %s dev=%p flags = %X\n", name, dev, flags));
   if (0 == strcmp(name, "virtio-blk0")) {
     lRtDevBlk0 = dev;
+  } else if (0 == strcmp(name, "virtio-net0")) {
+    lRtDevNet0 = dev;
   } else {
     r = RT_ERROR;
   }
@@ -110,3 +170,4 @@ rt_err_t rt_device_register(rt_device_t dev, const char *name, rt_uint16_t flags
 }
 
 DEVICE_REGISTER(sd0, BLOCK, asblk, &lRtDevBlk0);
+DEVICE_REGISTER(eth0, NET, asnet, &lRtDevNet0);
