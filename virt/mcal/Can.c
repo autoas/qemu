@@ -13,7 +13,7 @@
 #include "Std_Timer.h"
 #include "virtio_console.h"
 /* ================================ [ MACROS    ] ============================================== */
-// #define TEST_VIO_NET
+#define CAN_USE_ISR_RX
 
 /* this simulation just alow only one HTH/HRH for each CAN controller */
 #define CAN_MAX_HOH 32
@@ -47,6 +47,8 @@ struct can_frame {
 };
 /* ================================ [ DECLARES  ] ============================================== */
 extern const device_t dev_can0;
+
+void Can_Input(uint8_t Controller, uint8_t ch);
 /* ================================ [ DATAS     ] ============================================== */
 static uint32_t lOpenFlag = 0;
 static uint32_t lWriteFlag = 0;
@@ -54,6 +56,20 @@ static uint32_t lswPduHandle[32];
 static struct can_frame lCanFrame[32];
 static uint8_t lCanRxLen[32];
 /* ================================ [ LOCALS    ] ============================================== */
+#ifdef CAN_USE_ISR_RX
+static rt_err_t can_rx_indicate(rt_device_t dev, rt_size_t size) {
+  uint8_t buffer[128];
+  int i;
+  int len = dev->ops->read(dev, 0, buffer, sizeof(buffer));
+  asAssert(size < sizeof(buffer));
+  if (len > 0) {
+    for (i = 0; i < len; i++) {
+      Can_Input(0, buffer[i]);
+    }
+  }
+  return RT_EOK;
+}
+#endif
 /* ================================ [ FUNCTIONS ] ============================================== */
 void Can_Init(const Can_ConfigType *Config) {
   virt_vio_init();
@@ -65,12 +81,14 @@ void Can_Init(const Can_ConfigType *Config) {
 Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType Transition) {
   Std_ReturnType ret = E_NOT_OK;
   int ercd;
-
   if (0 == Controller) {
     switch (Transition) {
     case CAN_CS_STARTED:
       ercd = dev_can0.ops.open(&dev_can0);
       if (0 == ercd) {
+#ifdef CAN_USE_ISR_RX
+        dev_can0.ops.ctrl(&dev_can0, RT_DEVICE_CTRL_SET_INT, can_rx_indicate);
+#endif
         lOpenFlag |= (1 << Controller);
         lWriteFlag = 0;
       } else {
@@ -107,6 +125,7 @@ Std_ReturnType Can_Write(Can_HwHandleType Hth, const Can_PduType *PduInfo) {
         lswPduHandle[Hth] = PduInfo->swPduHandle;
       } else {
         ret = E_NOT_OK;
+        ASLOG(ERROR, ("CAN virtion can0 write failed: %d\n", ercd));
       }
     } else {
       ret = CAN_BUSY;
@@ -153,7 +172,8 @@ void Can_Input(uint8_t Controller, uint8_t ch) {
 }
 
 void Can_MainFunction_Read(void) {
-  static uint8_t buffer[2048];
+#ifndef CAN_USE_ISR_RX
+  uint8_t buffer[128];
   int i;
   int len = dev_can0.ops.read(&dev_can0, 0, buffer, sizeof(buffer));
   if (len > 0) {
@@ -161,4 +181,5 @@ void Can_MainFunction_Read(void) {
       Can_Input(0, buffer[i]);
     }
   }
+#endif
 }

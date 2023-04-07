@@ -254,6 +254,11 @@ static int dev_ascan_ctrl(const device_t *device, int cmd, void *args) {
   if (NULL == dev)
     return -1;
 
+  if (RT_DEVICE_CTRL_SET_INT == cmd) {
+    dev->rx_indicate = (rt_err_t(*)(rt_device_t, rt_size_t))args;
+    args = NULL;
+  }
+
   ercd = dev->ops->control(dev, cmd, args);
 
   return ercd;
