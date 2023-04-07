@@ -10,7 +10,9 @@ Import('BUILD_DIR')
 
 generate(Glob('config/*.json'))
 
-objs = Glob('*/*.c')
+objsKey = Glob('%s/app/platform/simulator/src/Key.c' % (RootDir))
+
+objs = Glob('*/*.c') + objsKey
 objsAsm = Glob('*/*.S')
 objsPci = Glob('bsp/pci/*.c')
 Os_Cfg = Glob('config/GEN/Os*.c')
@@ -73,8 +75,9 @@ class ApplicationVirtRun(Application):
         img = '%s/asblk0.img' % (RootDir)
         qemu.CreateDiskImg(img)
         params = '-netdev type=tap,id=net0,ifname=tap0,script=no,downscript=no'
-        #params = '-netdev user,id=net0'
+        # params = '-netdev user,id=net0'
         params += ' -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
         params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
         params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
+        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=on,id=console0 -device virtserialport,chardev=console0'%(qemu.FindPort())
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

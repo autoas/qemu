@@ -8,6 +8,7 @@
 #include "virt.h"
 #include "virtio_blk.h"
 #include "virtio_net.h"
+#include "virtio_console.h"
 /* ================================ [ MACROS    ] ============================================== */
 #ifndef RT_USING_VIRTIO_VERSION
 #define RT_USING_VIRTIO_VERSION 0x1
@@ -43,6 +44,8 @@ void virt_vio_init(void) {
       rt_virtio_blk_init((rt_ubase_t *)mmio_base, irq);
     } else if (VIRTIO_DEVICE_ID_NET == mmio_config->device_id) {
       rt_virtio_net_init((rt_ubase_t *)mmio_base, irq);
+    } else if (VIRTIO_DEVICE_ID_CONSOLE == mmio_config->device_id) {
+      rt_virtio_console_init((rt_ubase_t *)mmio_base, irq);
     }
   }
 }

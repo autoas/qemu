@@ -9,6 +9,7 @@
 
 #include <rtconfig.h>
 #include <rtdef.h>
+#include <rtservice.h>
 #include <string.h>
 #include "Std_Debug.h"
 #include "heap.h"
