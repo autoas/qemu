@@ -17,7 +17,9 @@
 #include "interrupt.h"
 #include "gicv2.h"
 #include "gicv3.h"
+#ifdef USE_OS
 #include "kernel.h"
+#endif
 /* ================================ [ MACROS    ] ============================================== */
 #define isb() asm volatile("isb" : : : "memory")
 
@@ -44,7 +46,6 @@
 /* 8.9.7 GICD_ICFGR<n>, Interrupt Configuration Registers */
 #define GIC_GICD_ICFGR_LEVEL (0x0) /* level-sensitive */
 #define GIC_GICD_ICFGR_EDGE (0x2)  /* edge-triggered */
-
 /* ================================ [ TYPES     ] ============================================== */
 typedef struct {
   Irq_IsrFncType isrFnc;
@@ -177,8 +178,8 @@ rt_isr_handler_t rt_hw_interrupt_install(int vector, rt_isr_handler_t handler, v
   return isrFnc;
 }
 
-
-void rt_thread_yield(void)
-{
+void rt_thread_yield(void) {
+#ifdef USE_OS
   Schedule();
+#endif
 }

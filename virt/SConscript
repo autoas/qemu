@@ -11,8 +11,9 @@ Import('BUILD_DIR')
 generate(Glob('config/*.json'))
 
 objsKey = Glob('%s/app/platform/simulator/src/Key.c' % (RootDir))
+objsOta = Glob('%s/app/platform/simulator/src/ota.c' % (RootDir))
 
-objs = Glob('*/*.c') + objsKey
+objs = Glob('*/*.c')
 objsAsm = Glob('*/*.S')
 objsPci = Glob('bsp/pci/*.c')
 Os_Cfg = Glob('config/GEN/Os*.c')
@@ -32,18 +33,44 @@ class LibraryVirtRTT(Library):
 
 
 ApplicationCanApp = query_application('CanApp')
+ApplicationCanBL = query_application('CanBL')
 
 
 @register_application
 class ApplicationVirt(ApplicationCanApp):
     compiler = 'Arm64GCC'
 
+    def signit(self):
+        sign = os.path.abspath('%s/../../GCC/Loader/Loader' % (BUILD_DIR))
+        if IsPlatformWindows():
+            sign += '.exe'
+        if os.path.isfile(sign):
+            target = '%s/Virt' % (BUILD_DIR)
+            s19T = target + '.s19'
+            cmd = '%s -a %s -s 1043456 -S crc32' % (sign, s19T)
+            self.AddPostAction(cmd)
+            env = self.ensure_env()
+            cplPath = os.path.dirname(env['CC'])
+
+            binT = target + '.bin'
+            objT = target + '.o'
+            symName = binT.replace(':', '_').replace(
+                '/', '_').replace('\\', '_').replace('.', '_')
+            cmd = '%s/aarch64-elf-objcopy -I binary -O elf32-littlearm %s %s --binary-architecture aarch64' % (
+                cplPath, binT, objT)
+            self.AddPostAction(cmd)
+            cmd = '%s/aarch64-elf-objcopy -I elf32-littlearm -O elf32-littlearm %s %s' \
+                  ' --rename-section .data=.app --redefine-sym _binary_%s_start=._app_start' \
+                  ' --redefine-sym _binary_%s_end=._app_end --redefine-sym _binary_%s_size=._app_size' % (
+                      cplPath, objT, objT, symName, symName, symName)
+            self.AddPostAction(cmd)
+
     def platform_config(self):
         self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'Pci', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
         self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
-                               '-Map', '%s/virtbl.map' % (BUILD_DIR), '-Os'])
+                               '-Map', '%s/Virt.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
                       CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
                                   'USE_SHELL', 'USE_PCI', 'USE_OSAL', 'USE_VFS',
@@ -51,7 +78,8 @@ class ApplicationVirt(ApplicationCanApp):
                                   'HEAP_SIZE=%s' % (10*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
-        self.source += objs + objsPci
+        self.source += objs + objsPci + objsKey
+        self.signit()
 
     def config(self):
         super().config()
@@ -63,13 +91,66 @@ class ApplicationVirt(ApplicationCanApp):
 
 
 @register_application
+class ApplicationVirtBL(ApplicationCanBL):
+    compiler = 'Arm64GCC'
+
+    def platform_config(self):
+        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'OSAL', 'Shell', 'VirtRTT', 'c']
+        self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
+        self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
+                               '-Map', '%s/VirtBL.map' % (BUILD_DIR), '-Os'])
+        self.SelectOS(arch='arm64', config=Os_Cfg,
+                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
+                                  'USE_SHELL', 'USE_OSAL', 'USE_LATE_MCU_INIT',
+                                  'BSP_USING_GIC', 'BSP_USING_GICV2', 'RT_USING_CACHE',
+                                  'HEAP_SIZE=%s' % (5*1024*1024),
+                                  '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
+                      CPPPATH=['%s/../arm' % (CWD)])
+        self.Append(CPPDEFINES=['USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x40700000',
+                                'BL_FLSDRV_MEMORY_LOW=0x40700000', 'BL_FLSDRV_MEMORY_HIGH=0x40701000',
+                                'BL_FINGER_PRINT_ADDRESS=0x47fffc00',
+                                'BL_APP_MEMORY_LOW=0x40800000', 'BL_APP_MEMORY_HIGH=0x48000000'])
+        appObj = '%s/../Virt/Virt.o' % (BUILD_DIR)
+        self.source += objs + objsOta
+
+
+flsObjs = Glob('../flash/*.c')
+
+
+@register_application
+class ApplicationVirtFlashDriver(Application):
+    compiler = 'Arm64GCC'
+
+    def signit(self):
+        sign = os.path.abspath('%s/../../GCC/Loader/Loader' % (BUILD_DIR))
+        if IsPlatformWindows():
+            sign += '.exe'
+        if os.path.isfile(sign):
+            target = '%s/VirtFlashDriver' % (BUILD_DIR)
+            s19T = target + '.s19'
+            cmd = '%s -f %s -s 4096' % (sign, s19T)
+            self.AddPostAction(cmd)
+
+    def config(self):
+        self.CPPPATH = ['$INFRAS']
+        self.Append(
+            CPPDEFINES=['FLS_START_ADDRESS=0x40700000', 'FLS_END_ADDRESS=0x40701000'])
+        self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
+        self.Append(LINKFLAGS=['-T', '%s/linker-flsdrv.lds' % (CWD),
+                               '-Map', '%s/VirtFlsDrv.map' % (BUILD_DIR), '-Os'])
+        self.source = flsObjs
+        self.signit()
+
+
+@register_application
 class ApplicationVirtRun(Application):
     def config(self):
         pass
 
     def build(self):
         qemu = Qemu(arch='arm64')
-        target = '%s/Virt' % (BUILD_DIR[:-3])
+        target = '%sBL/VirtBL' % (BUILD_DIR[:-3])
         if (IsPlatformWindows()):
             target = target + '.exe'
         img = '%s/asblk0.img' % (RootDir)
@@ -79,5 +160,6 @@ class ApplicationVirtRun(Application):
         params += ' -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
         params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
         params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
-        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=on,id=console0 -device virtserialport,chardev=console0'%(qemu.FindPort())
+        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=off,id=console0 -device virtserialport,chardev=console0' % (
+            qemu.FindPort())
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

@@ -1,12 +1,18 @@
 MEMORY
 {
-	RAM		(rwx)	: ORIGIN = 0x40800000, LENGTH = 120M
-  PCINP (rw)  : ORIGIN = 0x10000000, LENGTH = 256M
-  PCIP  (rw)  : ORIGIN = 0x3eff0000, LENGTH = 64K
+  RAM     (rwx): ORIGIN = 0x40000000, LENGTH = 7M
+  FLSDRV  (rwx): ORIGIN = 0x40700000, LENGTH = 1M
+  APPCODE (rx) : ORIGIN = 0x40800000, LENGTH = 120M
+  PCINP   (rw) : ORIGIN = 0x10000000, LENGTH = 256M
+  PCIP    (rw) : ORIGIN = 0x3eff0000, LENGTH = 64K
 }
 ENTRY(_start)
-/* application address */
+
 reset_main = 0x40000000;
+
+application_main = 0x40800000;
+FlashHeader = 0x40700000;
+FlashDriverRam = 0x40700000;
 SECTIONS
 {
   .init : {
@@ -63,4 +69,7 @@ SECTIONS
     *(.pcip)
     *(.pcip.*)
   } > PCIP
+  .app : {
+    KEEP(*(.app))
+  } > APPCODE
 }
