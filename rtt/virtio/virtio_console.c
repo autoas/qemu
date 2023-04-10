@@ -346,8 +346,6 @@ static rt_ssize_t virtio_console_port_read(rt_device_t dev, rt_off_t pos, void *
 
 static rt_ssize_t virtio_console_port_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)
 {
-    char ch = 0;
-    rt_off_t i = 0;
     rt_uint16_t id;
     struct port_device *port_dev = (struct port_device *)dev;
     struct virtio_device *virtio_dev = &port_dev->console->virtio_dev;
@@ -358,37 +356,20 @@ static rt_ssize_t virtio_console_port_write(rt_device_t dev, rt_off_t pos, const
     rt_base_t level = rt_spin_lock_irqsave(&port_dev->spinlock_tx);
 #endif
 
-    while (i < size || ch == '\r')
-    {
-        id = queue_tx->avail->idx % queue_tx->num;
+    id = queue_tx->avail->idx % queue_tx->num;
 
-        /* Keep the way until 'new line' are unified */
-        if (ch != '\r')
-        {
-            ch = *((const char *)buffer + i);
-        }
-        else
-        {
-            i -= sizeof(char);
-        }
+    virtio_free_desc(virtio_dev, queue_tx_index, id);
 
-        port_dev->info[id].tx_char = ch;
+    virtio_fill_desc(virtio_dev, queue_tx_index, id,
+            VIRTIO_VA2PA(buffer), size, 0, 0);
 
-        ch = (ch == '\n' ? '\r' : 0);
+    virtio_submit_chain(virtio_dev, queue_tx_index, id);
 
-        virtio_free_desc(virtio_dev, queue_tx_index, id);
+    virtio_queue_notify(virtio_dev, queue_tx_index);
 
-        virtio_fill_desc(virtio_dev, queue_tx_index, id,
-                VIRTIO_VA2PA(&port_dev->info[id].tx_char), sizeof(char), 0, 0);
+    virtio_alloc_desc(virtio_dev, queue_tx_index);
 
-        virtio_submit_chain(virtio_dev, queue_tx_index, id);
 
-        virtio_queue_notify(virtio_dev, queue_tx_index);
-
-        virtio_alloc_desc(virtio_dev, queue_tx_index);
-
-        i += sizeof(char);
-    }
 
 #ifdef RT_USING_SMP
     rt_spin_unlock_irqrestore(&port_dev->spinlock_tx, level);

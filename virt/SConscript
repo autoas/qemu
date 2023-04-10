@@ -1,6 +1,13 @@
 '''
+set LL_DL=64
 set DISABLE_VFS_LWEXT4=YES
 scons --cpl=Arm64GCC --app=Virt
+scons --cpl=Arm64GCC --app=VirtFlashDriver
+scons --cpl=Arm64GCC --app=VirtBL
+
+scons --cpl=Arm64GCC --app=VirtRun
+build\nt\GCC\Loader\Loader.exe -a build\nt\Arm64GCC\Virt\Virt.s19.sign -f build\nt\Arm64GCC\VirtFlashDriver\VirtFlashDriver.s19.sign -l %LL_DL%
+
 '''
 from building import *
 
@@ -47,7 +54,7 @@ class ApplicationVirt(ApplicationCanApp):
         if os.path.isfile(sign):
             target = '%s/Virt' % (BUILD_DIR)
             s19T = target + '.s19'
-            cmd = '%s -a %s -s 1043456 -S crc32' % (sign, s19T)
+            cmd = '%s -a %s -s 1043456' % (sign, s19T)
             self.AddPostAction(cmd)
             env = self.ensure_env()
             cplPath = os.path.dirname(env['CC'])
@@ -66,19 +73,19 @@ class ApplicationVirt(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'Pci', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
+        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
         self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/Virt.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
                       CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
-                                  'USE_SHELL', 'USE_PCI', 'USE_OSAL', 'USE_VFS',
+                                  'USE_SHELL', 'USE_OSAL', 'USE_VFS',
                                   'BSP_USING_GIC', 'BSP_USING_GICV2', 'RT_USING_CACHE',
                                   'HEAP_SIZE=%s' % (10*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
-        self.source += objs + objsPci + objsKey
+        self.source += objs + objsKey
         self.signit()
 
     def config(self):
@@ -107,7 +114,7 @@ class ApplicationVirtBL(ApplicationCanBL):
                                   'HEAP_SIZE=%s' % (5*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
-        self.Append(CPPDEFINES=['USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x40700000',
+        self.Append(CPPDEFINES=['USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x40700000', 'FL_USE_WRITE_WINDOW_BUFFER',
                                 'BL_FLSDRV_MEMORY_LOW=0x40700000', 'BL_FLSDRV_MEMORY_HIGH=0x40701000',
                                 'BL_FINGER_PRINT_ADDRESS=0x47fffc00',
                                 'BL_APP_MEMORY_LOW=0x40800000', 'BL_APP_MEMORY_HIGH=0x48000000'])
@@ -135,7 +142,7 @@ class ApplicationVirtFlashDriver(Application):
     def config(self):
         self.CPPPATH = ['$INFRAS']
         self.Append(
-            CPPDEFINES=['FLS_START_ADDRESS=0x40700000', 'FLS_END_ADDRESS=0x40701000'])
+            CPPDEFINES=['FLS_START_ADDRESS=0x40800000', 'FLS_END_ADDRESS=0x48000000'])
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-flsdrv.lds' % (CWD),
                                '-Map', '%s/VirtFlsDrv.map' % (BUILD_DIR), '-Os'])
@@ -160,6 +167,6 @@ class ApplicationVirtRun(Application):
         params += ' -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
         params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
         params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
-        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=off,id=console0 -device virtserialport,chardev=console0' % (
+        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=on,id=console0 -device virtserialport,chardev=console0' % (
             qemu.FindPort())
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

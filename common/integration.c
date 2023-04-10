@@ -8,6 +8,9 @@
 #include "Std_Debug.h"
 #include "Std_Critical.h"
 #include "Dcm.h"
+#ifdef __AARCH64__
+#include "psci.h"
+#endif
 /* ================================ [ MACROS    ] ============================================== */
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
@@ -77,7 +80,11 @@ void App_EnterProgramSession(void) {
 
 void Dcm_PerformReset(uint8_t resetType) {
   EnterCritical();
+#ifdef __AARCH64__
+  psci_sys_reset();
+#else
   reset_main();
+#endif
   ExitCritical();
 }
 

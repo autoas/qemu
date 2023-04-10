@@ -45,7 +45,7 @@ void virt_vio_init(void) {
     } else if (VIRTIO_DEVICE_ID_NET == mmio_config->device_id) {
       rt_virtio_net_init((rt_ubase_t *)mmio_base, irq);
     } else if (VIRTIO_DEVICE_ID_CONSOLE == mmio_config->device_id) {
-    rt_virtio_console_init((rt_ubase_t *)mmio_base, irq);
+      rt_virtio_console_init((rt_ubase_t *)mmio_base, irq);
     }
   }
 }
