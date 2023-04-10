@@ -23,7 +23,7 @@ SECTIONS
     . = ALIGN(8);
     *(.text*)
   } > RAM
-  _etext = .;
+  __etext = .;
 
   .data : {
     . = ALIGN(8);
