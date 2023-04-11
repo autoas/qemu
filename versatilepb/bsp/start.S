@@ -80,7 +80,7 @@ reset:
     ldr r1, =__bss_end
     bl  InitBssSection
 
-    bl  Irq_Disable
+    bl  DisableInterrupt
 
     ldr r0, =__etext
     ldr r1, =__data_start__
@@ -114,36 +114,36 @@ vector_irq:
     subs pc,lr,#4
 
     .section .text
-    .global Std_EnterCritical
-    .type   Std_EnterCritical, %function
-/* void Std_EnterCritical( imask_t intsts ); */
-Std_EnterCritical:
+    .global Std_ExitCritical
+    .type   Std_ExitCritical, %function
+/* void Std_ExitCritical( imask_t intsts ); */
+Std_ExitCritical:
     msr cpsr, r0
     mov pc, lr
 
-    .global Std_ExitCritical
-    .type   Std_ExitCritical, %function
-/* imask_t Std_ExitCritical( void ); */
-Std_ExitCritical:
+    .global Std_EnterCritical
+    .type   Std_EnterCritical, %function
+/* imask_t Std_EnterCritical( void ); */
+Std_EnterCritical:
     mrs r0, cpsr
     orr r1, r0, #0xc0
     msr cpsr_c, r1
     mov pc, lr
 
 
-/* void Irq_Disable(void)   */
-    .global Irq_Disable
-    .type   Irq_Disable, %function
-Irq_Disable:
+/* void DisableInterrupt(void)   */
+    .global DisableInterrupt
+    .type   DisableInterrupt, %function
+DisableInterrupt:
     mrs r0, cpsr
     orr r0, r0, #0xc0
     msr cpsr_c, r0
     mov pc, lr
 
-/* void Irq_Enable(void) */
-    .global Irq_Enable
-    .type   Irq_Enable, %function
-Irq_Enable:
+/* void EnableInterrupt(void) */
+    .global EnableInterrupt
+    .type   EnableInterrupt, %function
+EnableInterrupt:
     mrs r0, cpsr
     bic r0, r0, #0xc0
     msr cpsr_c, r0

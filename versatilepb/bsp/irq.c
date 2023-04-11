@@ -76,50 +76,7 @@ void irq_disable_line(int num) {
   }
 }
 
-/**
- *	Enables all IRQ's in the CPU's CPSR register.
- **/
-static void irqEnable() {
-  __asm volatile("mrs 	r0,cpsr");     // Read in the cpsr register.
-  __asm volatile("bic		r0,r0,#0x80"); // Clear bit 8, (0x80) -- Causes IRQs to be enabled.
-  __asm volatile("msr		cpsr_c, r0");  // Write it back to the CPSR register
-}
 
-static void irqDisable() {
-  __asm volatile("mrs		r0,cpsr");     // Read in the cpsr register.
-  __asm volatile("orr		r0,r0,#0x80"); // Set bit 8, (0x80) -- Causes IRQs to be disabled.
-  __asm volatile("msr		cpsr_c, r0");  // Write it back to the CPSR register.
-}
 
-int EnableInterrupts() {
-  irqEnable();
-  return 0;
-}
 
-int DisableInterrupts() {
-  irqDisable();
-  return 0;
-}
 
-static unsigned long isrDisableCounter = 0;
-imask_t __attribute__((weak)) __Irq_Save(void) {
-  isrDisableCounter++;
-  if (1u == isrDisableCounter) {
-    irqDisable();
-  }
-  return 0;
-}
-
-void __attribute__((weak)) Irq_Restore(imask_t irq_state) {
-
-  isrDisableCounter--;
-  if (0u == isrDisableCounter) {
-    irqEnable();
-  }
-
-  (void)irq_state;
-}
-
-void __attribute__((weak)) Irq_Enable(void) {
-  irqEnable();
-}

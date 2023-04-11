@@ -4,8 +4,8 @@ set LL_DL=64
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbFlashDriver
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanApp
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBL
-build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1043456 -S crc32
-build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096  -S crc32
+build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19 -s 1043456
+build\nt\GCC\Loader\Loader.exe -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19 -s 4096
 
 scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBLRun
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
@@ -35,6 +35,9 @@ Import('BUILD_DIR')
 ApplicationCanBL = query_application('CanBL')
 ApplicationCanApp = query_application('CanApp')
 
+objsKey = Glob('%s/app/platform/simulator/src/Key.c' % (RootDir))
+objsOta = Glob('%s/app/platform/simulator/src/ota.c' % (RootDir))
+
 objs = Glob('*/*.c')
 
 objsAsm = Glob('*/*.S')
@@ -61,6 +64,7 @@ class ApplicationVersatilepbCanBL(ApplicationCanBL):
     def platform_config(self):
         self.LIBS += ['Versatilepb', 'LibC']
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x00140000',
+                                'FL_USE_WRITE_WINDOW_BUFFER', 'BL_FINGER_PRINT_ADDRESS=0x0013fc00',
                                 'BL_FLSDRV_MEMORY_LOW=0x00140000', 'BL_FLSDRV_MEMORY_HIGH=0x00141000',
                                 'BL_APP_MEMORY_LOW=0x00040000', 'BL_APP_MEMORY_HIGH=0x00140000'])
         self.Append(CPPDEFINES=['CANTP_CFG_N_Cr=5000'])
@@ -69,7 +73,7 @@ class ApplicationVersatilepbCanBL(ApplicationCanBL):
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
                                '-Map', '%s/VersatilepbCanBL.map' % (BUILD_DIR)])
         appObj = '%s/../VersatilepbCanApp/VersatilepbCanApp.o' % (BUILD_DIR)
-        self.source += [appObj] + objsAsm
+        self.source += [appObj] + objsAsm + objsOta
 
 
 flsObjs = Glob('../flash/*.c')
@@ -108,7 +112,7 @@ class ApplicationVersatilepbCanBLRun(Application):
         pass
 
     def build(self):
-        qemu = Qemu(arch='arm')
+        qemu = Qemu(arch='arm', CAN0=True)
         target = '%s/VersatilepbCanBL' % (BUILD_DIR[:-3])
         if (IsPlatformWindows()):
             target = target + '.exe'
@@ -127,7 +131,7 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
         if os.path.isfile(sign):
             target = '%s/VersatilepbCanApp' % (BUILD_DIR)
             s19T = target + '.s19'
-            cmd = '%s -a %s -s 1048576' % (sign, s19T)
+            cmd = '%s -a %s -s 1043456' % (sign, s19T)
             self.AddPostAction(cmd)
             env = self.ensure_env()
             cplPath = os.path.dirname(env['CC'])
@@ -146,9 +150,9 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        self.source += objsPci
-        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell', 'Pci']
-        self.Append(CPPDEFINES=['USE_SHELL', 'USE_PCI'])
+        self.source += objsKey
+        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell']
+        self.Append(CPPDEFINES=['USE_SHELL'])
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'BL_FLSDRV_MEMORY_LOW=0x00140000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])

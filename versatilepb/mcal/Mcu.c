@@ -14,7 +14,7 @@ extern void timer_init(void (*cbk)(void));
 extern void vic_setup(void);
 extern void irq_init(void);
 extern void serial_init(void);
-extern void Irq_Enable(void);
+extern void EnableInterrupt(void);
 #ifdef USE_PCI
 void virtio_net_init(void);
 #endif
@@ -29,5 +29,5 @@ void Mcu_Init(const Mcu_ConfigType *ConfigPtr) {
   virtio_net_init();
 #endif
   timer_init(NULL);
-  Irq_Enable();
+  EnableInterrupt();
 }
