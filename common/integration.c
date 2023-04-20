@@ -73,7 +73,7 @@ void App_EnterProgramSession(void) {
   cond->Reprograming = TRUE;
   cond->ApplUpdated = TRUE;
   cond->ResponseRequired = TRUE;
-  reset_main();
+  Dcm_PerformReset(1);
   ExitCritical();
 #endif
 }

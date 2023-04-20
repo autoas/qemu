@@ -54,7 +54,7 @@ class ApplicationVirt(ApplicationCanApp):
         if os.path.isfile(sign):
             target = '%s/Virt' % (BUILD_DIR)
             s19T = target + '.s19'
-            cmd = '%s -a %s -s 1043456' % (sign, s19T)
+            cmd = '%s -a %s -s 1047552' % (sign, s19T)
             self.AddPostAction(cmd)
             env = self.ensure_env()
             cplPath = os.path.dirname(env['CC'])
@@ -63,10 +63,10 @@ class ApplicationVirt(ApplicationCanApp):
             objT = target + '.o'
             symName = binT.replace(':', '_').replace(
                 '/', '_').replace('\\', '_').replace('.', '_')
-            cmd = '%s/aarch64-elf-objcopy -I binary -O elf32-littlearm %s %s --binary-architecture aarch64' % (
+            cmd = '%s/aarch64-elf-objcopy -I binary -O elf64-littleaarch64 %s %s --binary-architecture aarch64' % (
                 cplPath, binT, objT)
             self.AddPostAction(cmd)
-            cmd = '%s/aarch64-elf-objcopy -I elf32-littlearm -O elf32-littlearm %s %s' \
+            cmd = '%s/aarch64-elf-objcopy -I elf64-littleaarch64 -O elf64-littleaarch64 %s %s' \
                   ' --rename-section .data=.app --redefine-sym _binary_%s_start=._app_start' \
                   ' --redefine-sym _binary_%s_end=._app_end --redefine-sym _binary_%s_size=._app_size' % (
                       cplPath, objT, objT, symName, symName, symName)
@@ -85,6 +85,7 @@ class ApplicationVirt(ApplicationCanApp):
                                   'HEAP_SIZE=%s' % (10*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
+        self.Append(CPPDEFINES=['BL_FLSDRV_MEMORY_LOW=0x40700000'])
         self.source += objs + objsKey
         self.signit()
 
@@ -116,10 +117,10 @@ class ApplicationVirtBL(ApplicationCanBL):
                       CPPPATH=['%s/../arm' % (CWD)])
         self.Append(CPPDEFINES=['USE_BL', 'FLASH_DRIVER_STARTADDRESS=0x40700000', 'FL_USE_WRITE_WINDOW_BUFFER',
                                 'BL_FLSDRV_MEMORY_LOW=0x40700000', 'BL_FLSDRV_MEMORY_HIGH=0x40701000',
-                                'BL_FINGER_PRINT_ADDRESS=0x47fffc00',
-                                'BL_APP_MEMORY_LOW=0x40800000', 'BL_APP_MEMORY_HIGH=0x48000000'])
-        appObj = '%s/../Virt/Virt.o' % (BUILD_DIR)
-        self.source += objs + objsOta
+                                'BL_FINGER_PRINT_ADDRESS=0x408ffc00',
+                                'BL_APP_MEMORY_LOW=0x40800000', 'BL_APP_MEMORY_HIGH=0x40900000'])
+        appObj = Glob('%s/../Virt/Virt.o' % (BUILD_DIR))
+        self.source += objs + objsOta + appObj
 
 
 flsObjs = Glob('../flash/*.c')

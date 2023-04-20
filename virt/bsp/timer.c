@@ -16,6 +16,9 @@
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
 /* ================================ [ DATAS     ] ============================================== */
+static uint32_t lSysTickFreq = 0;
+static uint32_t lSysTicks = 0;
+static uint64_t lLastSysTick = 0;
 /* ================================ [ LOCALS    ] ============================================== */
 /* CNTV_CTL_EL0, Counter-timer Virtual Timer Control register
   Control register for the virtual timer.
@@ -49,16 +52,17 @@ static void raw_write_cntv_cval_el0(uint64_t cntv_cval_el0) {
 CNTFRQ_EL0, Counter-timer Frequency register
   Holds the clock frequency of the system counter.
 */
-uint32_t raw_read_cntfrq_el0(void) {
+static uint32_t raw_read_cntfrq_el0(void) {
   uint32_t cntfrq_el0;
 
   __asm__ __volatile__("mrs %0, CNTFRQ_EL0\n\t" : "=r"(cntfrq_el0) : : "memory");
   return cntfrq_el0;
 }
 
-void raw_write_cntfrq_el0(uint32_t cntfrq_el0) {
+static void raw_write_cntfrq_el0(uint32_t cntfrq_el0) {
   __asm__ __volatile__("msr CNTFRQ_EL0, %0\n\t" : : "r"(cntfrq_el0) : "memory");
 }
+
 static void disable_cntv(void) {
   uint32_t cntv_ctl;
 
@@ -85,39 +89,41 @@ void __attribute__((weak)) OsTick(void) {
   OsTickCounter++;
 }
 
-std_time_t Std_GetTime(void) {
-  return OsTickCounter * (1000000 / OS_TICKS_PER_SECOND);
-}
-
 static void timer_isr_handler(int irqno, void *param) {
-  uint64_t ticks, current_cnt;
-  uint32_t cntfrq;
-
   disable_cntv();
 
+  lLastSysTick += lSysTicks;
   OsTick();
   SignalCounter(0);
 
-  cntfrq = raw_read_cntfrq_el0();
-  ticks = cntfrq / OS_TICKS_PER_SECOND;
-  current_cnt = raw_read_cntvct_el0();
-  raw_write_cntv_cval_el0(current_cnt + ticks);
+  raw_write_cntv_cval_el0(lLastSysTick + lSysTicks);
+
   enable_cntv();
 }
 /* ================================ [ FUNCTIONS ] ============================================== */
 void Os_PortStartSysTick(void) {
-  uint64_t ticks, current_cnt;
-  uint32_t cntfrq;
-
   Irq_Install(TIMER_IRQ, timer_isr_handler, NULL, smp_processor_id());
 
-  cntfrq = raw_read_cntfrq_el0();
-  ticks = cntfrq / OS_TICKS_PER_SECOND;
-  current_cnt = raw_read_cntvct_el0();
-  raw_write_cntv_cval_el0(current_cnt + ticks);
+  lSysTickFreq = raw_read_cntfrq_el0();
+  lSysTicks = lSysTickFreq / OS_TICKS_PER_SECOND;
+  lLastSysTick = raw_read_cntvct_el0();
+  raw_write_cntv_cval_el0(lLastSysTick + lSysTicks);
   enable_cntv();
 }
 
 void Os_PortStopSysTick(void) {
   disable_cntv();
+}
+
+std_time_t Std_GetTime(void) {
+  uint64_t ticks;
+  uint64_t now = raw_read_cntvct_el0();
+
+  if (now >= lLastSysTick) {
+    ticks = now - lLastSysTick;
+  } else {
+    ticks = UINT64_MAX - lLastSysTick + 1 + now;
+  }
+  return (std_time_t)(OsTickCounter * (1000000 / OS_TICKS_PER_SECOND) +
+                      ticks * 1000000 / lSysTickFreq);
 }
