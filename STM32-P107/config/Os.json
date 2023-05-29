@@ -2,14 +2,14 @@
   "class": "OS",
   "StartupHook": true,
   "TaskList": [
-    { "Name": "TaskIdle",  "Priority": 0, "AutoStart": true },
-    { "Name": "Task10Ms", "Priority": 7 }
+    { "name": "TaskIdle",  "Priority": 0, "AutoStart": true },
+    { "name": "Task10Ms", "Priority": 7 }
   ],
   "CounterList": [
-    { "Name": "CounterSystem" }
+    { "name": "CounterSystem" }
   ],
   "AlarmList":[
-    { "Name": "Alarm0", "Counter":"CounterSystem",
+    { "name": "Alarm0", "Driver":"CounterSystem",
       "Action": "ActivateTask", "Task":"Task10Ms",
       "AutoStart": true, "StartTime": 1, "Period": 1 }
   ]

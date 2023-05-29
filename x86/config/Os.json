@@ -4,7 +4,7 @@
   "PTHREAD_PRIORITY": 32,
   "StartupHook": true,
   "TaskList": [
-    { "Name": "TaskIdle",  "Priority": 0, "AutoStart": true },
-    { "Name": "TaskPosix", "Priority": 32, "EventList": [ {"Name": "EV1", "Mask":1} ] }
+    { "name": "TaskIdle",  "Priority": 0, "AutoStart": true },
+    { "name": "TaskPosix", "Priority": 32, "EventList": [ {"name": "EV1", "Mask":1} ] }
   ]
 }
