@@ -1,6 +1,7 @@
 MEMORY
 {
-  RAM     (rwx): ORIGIN = 0x40000000, LENGTH = 7M
+  FLASH   (rwx): ORIGIN = 0x40000000, LENGTH = 1M
+  RAM     (rwx): ORIGIN = 0x40100000, LENGTH = 6M
   FLSDRV  (rwx): ORIGIN = 0x40700000, LENGTH = 1M
   APPCODE (rx) : ORIGIN = 0x40800000, LENGTH = 120M
   PCINP   (rw) : ORIGIN = 0x10000000, LENGTH = 256M
@@ -17,15 +18,18 @@ SECTIONS
 {
   .init : {
     KEEP(*(.init))
-  } > RAM
+  } > FLASH
 
   .text : {
     . = ALIGN(8);
     *(.text*)
-  } > RAM
+    . = ALIGN(8);
+    *(.rodata*)
+    . = ALIGN(8);
+  } > FLASH
   __etext = .;
 
-  .data : {
+  .data : AT (__etext)  {
     . = ALIGN(8);
     __data_start__ = .;
     *(.data*)
@@ -39,7 +43,6 @@ SECTIONS
     __devtab_end = .;
     . = ALIGN(8);
     __data_end__ = .;
-    *(.rodata*)
   } > RAM
 
   .bss :
