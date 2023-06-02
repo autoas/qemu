@@ -41,6 +41,14 @@
   do {                                                                                             \
     (frame)->data[CAN_MAX_DLEN + 4] = dlc;                                                         \
   } while (0)
+
+#ifndef TRACE_TX_CANID
+#define TRACE_TX_CANID 0x7FD
+#endif
+
+#ifndef TRACE_TX_CAN_HANDLE
+#define TRACE_TX_CAN_HANDLE 0xFFFE
+#endif
 /* ================================ [ TYPES     ] ============================================== */
 struct can_frame {
   uint8_t data[CAN_MTU];
@@ -146,7 +154,10 @@ void Can_MainFunction_Write(void) {
     if (lWriteFlag & (1 << i)) {
       swPduHandle = lswPduHandle[i];
       lWriteFlag &= ~(1 << i);
-      CanIf_TxConfirmation(swPduHandle);
+      if (TRACE_TX_CAN_HANDLE == swPduHandle) {
+      } else {
+        CanIf_TxConfirmation(swPduHandle);
+      }
     }
   }
 }
@@ -182,4 +193,17 @@ void Can_MainFunction_Read(void) {
     }
   }
 #endif
+}
+
+int trace_can_put(uint8_t *data, uint8_t dlc) {
+  Std_ReturnType ret;
+  Can_PduType PduInfo;
+  PduInfo.id = TRACE_TX_CANID;
+  PduInfo.length = dlc;
+  PduInfo.sdu = data;
+  PduInfo.swPduHandle = TRACE_TX_CAN_HANDLE;
+
+  ret = Can_Write(0, &PduInfo);
+
+  return (int)ret;
 }

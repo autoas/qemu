@@ -28,6 +28,8 @@ Os_Cfg = Glob('config/GEN/Os*.c')
 
 objsRTT = Glob('bsp/rtt/*.c')
 
+objsTraceOsCfg = Glob('config/GEN/GEN/TraceOS_Cfg.c')
+
 
 @register_library
 class LibraryVirtRTT(Library):
@@ -74,6 +76,7 @@ class ApplicationVirt(ApplicationCanApp):
 
     def platform_config(self):
         self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
+        self.LIBS += ['StdTrace']
         self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
@@ -81,12 +84,14 @@ class ApplicationVirt(ApplicationCanApp):
         self.SelectOS(arch='arm64', config=Os_Cfg,
                       CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
                                   'USE_SHELL', 'USE_OSAL', 'USE_VFS',
+                                  'OS_USE_PRETASK_HOOK', 'OS_USE_POSTTASK_HOOK',
+                                  'USE_TRACE', 'USE_TRACE_OS',
                                   'BSP_USING_GIC', 'BSP_USING_GICV2', 'RT_USING_CACHE',
                                   'HEAP_SIZE=%s' % (10*1024*1024),
                                   '__AARCH64__', 'OS_TICKS_PER_SECOND=1000'],
                       CPPPATH=['%s/../arm' % (CWD)])
         self.Append(CPPDEFINES=['BL_FLSDRV_MEMORY_LOW=0x40700000'])
-        self.source += objs + objsKey
+        self.source += objs + objsKey + objsTraceOsCfg
         self.signit()
 
     def config(self):
