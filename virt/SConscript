@@ -82,7 +82,7 @@ class ApplicationVirt(ApplicationCanApp):
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/Virt.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
-                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
+                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', # 'USE_SMP',
                                   'USE_SHELL', 'USE_OSAL', 'USE_VFS',
                                   'OS_USE_PRETASK_HOOK', 'OS_USE_POSTTASK_HOOK',
                                   'USE_TRACE', 'USE_TRACE_OS',
@@ -114,7 +114,7 @@ class ApplicationVirtBL(ApplicationCanBL):
         self.Append(LINKFLAGS=['-T', '%s/linker-boot.lds' % (CWD),
                                '-Map', '%s/VirtBL.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
-                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', 'USE_SMP',
+                      CPPDEFINES=['USE_STD_DEBUG', 'OS_STK_SIZE_SCALER=4', # 'USE_SMP',
                                   'USE_SHELL', 'USE_OSAL', 'USE_LATE_MCU_INIT',
                                   'BSP_USING_GIC', 'BSP_USING_GICV2', 'RT_USING_CACHE',
                                   'HEAP_SIZE=%s' % (5*1024*1024),
@@ -173,6 +173,6 @@ class ApplicationVirtRun(Application):
         params += ' -device virtio-net-device,netdev=net0,bus=virtio-mmio-bus.1'
         params += ' -drive if=none,file=%s,format=raw,id=blk0' % (img)
         params += ' -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0'
-        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=on,id=console0 -device virtserialport,chardev=console0' % (
+        params += ' -device virtio-serial-device -chardev socket,host=127.0.0.1,port=%s,server=on,wait=off,id=console0 -device virtserialport,chardev=console0' % (
             qemu.FindPort())
         qemu.Run('-M virt,gic-version=2 -cpu cortex-a57 -smp 2 -kernel %s %s' % (target, params))

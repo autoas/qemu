@@ -1,12 +1,11 @@
 {
   "class": "OS",
-  "CPU_CORE_NUMBER": 2,
+  "CPU_CORE_NUMBER": 1,
   "PTHREAD": 32,
   "PTHREAD_PRIORITY": 32,
   "StartupHook": true,
   "TaskList": [
-    { "name": "TaskIdle", "Priority": 0, "AutoStart": true, "Cpu": 0 },
-    { "name": "TaskIdle1", "Priority": 0, "AutoStart": true, "Cpu": 1 },
+    { "name": "TaskIdle1", "Priority": 0, "AutoStart": true, "Cpu": 0 },
     { "name": "TaskPosix", "Priority": 32, "EventList": [ {"name": "EV1", "Mask":1} ] }
   ]
 }
