@@ -8,6 +8,7 @@
 #include "Std_Debug.h"
 #include "Std_Critical.h"
 #include "Dcm.h"
+#include "StbM.h"
 #ifdef __AARCH64__
 #include "psci.h"
 #endif

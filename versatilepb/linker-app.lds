@@ -44,6 +44,12 @@ SECTIONS {
    } > RAM
    __bss_end = .;
 
+   .ARM.exidx :
+   {
+      *(.ARM.exidx*)
+      *(.gnu.linkonce.armexidx.*)
+   } > RAM
+
    .pciio :
    {
       *(.pciio)

@@ -151,8 +151,8 @@ class ApplicationVersatilepbCanApp(ApplicationCanApp):
 
     def platform_config(self):
         self.source += objsKey
-        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell']
-        self.Append(CPPDEFINES=['USE_SHELL'])
+        self.LIBS += ['Versatilepb', 'LibC', 'OSAL', 'Shell', 'StdTimer']
+        self.Append(CPPDEFINES=['USE_SHELL', 'USE_STBM_DFT', 'USE_STD_TIME_64'])
         self.Append(CPPDEFINES=['USE_STD_DEBUG', 'BL_FLSDRV_MEMORY_LOW=0x00140000'])
         self.Append(CPPFLAGS=['-mcpu=arm926ej-s', '-marm'])
         self.Append(ASFLAGS=['-mcpu=arm926ej-s', '-marm'])
