@@ -75,10 +75,11 @@ class ApplicationVirt(ApplicationCanApp):
             self.AddPostAction(cmd)
 
     def platform_config(self):
-        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c']
+        self.LIBS += ['LibC', 'QemuArmInt', 'Arm', 'OSAL', 'Shell', 'VirtRTT', 'VFS', 'c', 'StdTimer']
         self.LIBS += ['StdTrace']
         self.CPPPATH += ['$INFRAS', '%s/bsp' % (CWD)]
         self.Append(CPPFLAGS=['-Os', '-mcpu=cortex-a57+nofp'])
+        self.Append(CPPDEFINES=['USE_STBM_DFT', 'USE_STD_TIME_64'])
         self.Append(LINKFLAGS=['-T', '%s/linker-app.lds' % (CWD),
                                '-Map', '%s/Virt.map' % (BUILD_DIR), '-Os'])
         self.SelectOS(arch='arm64', config=Os_Cfg,
