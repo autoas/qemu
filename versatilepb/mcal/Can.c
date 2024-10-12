@@ -49,6 +49,8 @@ static uint32_t lWriteFlag = 0;
 static uint32_t lswPduHandle[32];
 static struct can_frame lCanFrame[32];
 static uint8_t lCanRxLen[32];
+static Can_ControllerStateType lCanCtrlState[32];
+static CanTrcv_TrcvModeType lCanTrcvMode[CAN_MAX_HOH];
 /* ================================ [ LOCALS    ] ============================================== */
 
 /* ================================ [ FUNCTIONS ] ============================================== */
@@ -57,6 +59,7 @@ void Can_Init(const Can_ConfigType *Config) {
   lOpenFlag = 0;
   lWriteFlag = 0;
   memset(lCanRxLen, 0, sizeof(lCanRxLen));
+  memset(lCanCtrlState, 0, sizeof(lCanRxLen));
 }
 
 Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType Transition) {
@@ -70,14 +73,49 @@ Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType
       Uart_Init(config->ioBase, config->irqNo, config->callback);
       lOpenFlag |= (1 << Controller);
       lWriteFlag = 0;
+      lCanCtrlState[Controller] = CAN_CS_STARTED;
       break;
     case CAN_CS_STOPPED:
     case CAN_CS_SLEEP:
       lOpenFlag &= ~(1 << Controller);
+      lCanCtrlState[Controller] = Transition;
       break;
     default:
       break;
     }
+  }
+
+  return ret;
+}
+
+Std_ReturnType CanIf_SetTrcvMode(uint8_t TransceiverId, CanTrcv_TrcvModeType TransceiverMode) {
+  Std_ReturnType ret = E_NOT_OK;
+
+  if (TransceiverId < CAN_CONFIG->numOfChannels) {
+    lCanTrcvMode[TransceiverId] = TransceiverMode;
+    ret = E_OK;
+  }
+
+  return ret;
+}
+
+Std_ReturnType CanIf_GetTrcvMode(uint8_t TransceiverId, CanTrcv_TrcvModeType *TransceiverModePtr) {
+  Std_ReturnType ret = E_NOT_OK;
+
+  if (TransceiverId < CAN_CONFIG->numOfChannels) {
+    *TransceiverModePtr = lCanTrcvMode[TransceiverId];
+    ret = E_OK;
+  }
+
+  return ret;
+}
+
+Std_ReturnType Can_GetControllerMode(uint8_t Controller,
+                                     Can_ControllerStateType *ControllerModePtr) {
+  Std_ReturnType ret = E_NOT_OK;
+
+  if (Controller < CAN_CONFIG->numOfChannels) {
+    *ControllerModePtr = lCanCtrlState[Controller];
   }
 
   return ret;

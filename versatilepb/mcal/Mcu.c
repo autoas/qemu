@@ -7,6 +7,7 @@
 #include "Mcu.h"
 #include "Std_Timer.h"
 #include "Std_Critical.h"
+#include "Dcm.h"
 /* ================================ [ MACROS    ] ============================================== */
 /* ================================ [ TYPES     ] ============================================== */
 /* ================================ [ DECLARES  ] ============================================== */
@@ -30,4 +31,24 @@ void Mcu_Init(const Mcu_ConfigType *ConfigPtr) {
 #endif
   timer_init(NULL);
   EnableInterrupt();
+}
+
+Std_ReturnType __weak NvM_TestStart(const uint8_t *dataIn, Dcm_OpStatusType OpStatus,
+                                    uint8_t *dataOut, uint16_t *currentDataLength,
+                                    Dcm_NegativeResponseCodeType *ErrorCode) {
+  return E_NOT_OK;
+}
+
+Std_ReturnType __weak NvM_TestGetResult(const uint8_t *dataIn, Dcm_OpStatusType OpStatus,
+                                        uint8_t *dataOut, uint16_t *currentDataLength,
+                                        Dcm_NegativeResponseCodeType *ErrorCode) {
+  return E_NOT_OK;
+}
+
+Std_ReturnType Dem_TestStart(const uint8_t *dataIn, Dcm_OpStatusType OpStatus, uint8_t *dataOut,
+                             uint16_t *currentDataLength, Dcm_NegativeResponseCodeType *ErrorCode) {
+  return E_NOT_OK;
+}
+
+void __weak Xcp_PerformReset(void) {
 }
