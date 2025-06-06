@@ -1,4 +1,4 @@
-'''
+r'''
 set LL_DL=64
 set DISABLE_VFS_LWEXT4=YES
 scons --cpl=Arm64GCC --app=Virt

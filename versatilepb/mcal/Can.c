@@ -59,7 +59,7 @@ void Can_Init(const Can_ConfigType *Config) {
   lOpenFlag = 0;
   lWriteFlag = 0;
   memset(lCanRxLen, 0, sizeof(lCanRxLen));
-  memset(lCanCtrlState, 0, sizeof(lCanRxLen));
+  memset(lCanCtrlState, 0, sizeof(lCanCtrlState));
 }
 
 Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType Transition) {

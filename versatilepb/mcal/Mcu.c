@@ -45,7 +45,7 @@ Std_ReturnType __weak NvM_TestGetResult(const uint8_t *dataIn, Dcm_OpStatusType 
   return E_NOT_OK;
 }
 
-Std_ReturnType Dem_TestStart(const uint8_t *dataIn, Dcm_OpStatusType OpStatus, uint8_t *dataOut,
+Std_ReturnType __weak Dem_TestStart(const uint8_t *dataIn, Dcm_OpStatusType OpStatus, uint8_t *dataOut,
                              uint16_t *currentDataLength, Dcm_NegativeResponseCodeType *ErrorCode) {
   return E_NOT_OK;
 }
