@@ -28,10 +28,11 @@ void BL_JumpToApp(void) {
   application_main();
 #endif
 }
-#ifdef BL_FLSDRV_MEMORY_LOW
+#ifdef USE_BL
+extern const uint32_t blFlsDriverMemoryLow;
 boolean BL_IsUpdateRequested(void) {
   boolean r = FALSE;
-  uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
+  uint32_t *magic = (uint32_t *)blFlsDriverMemoryLow;
   if (0x12345678 == *magic) {
     r = TRUE;
   }
@@ -41,11 +42,11 @@ boolean BL_IsUpdateRequested(void) {
 
 Std_ReturnType BL_GetProgramCondition(Dcm_ProgConditionsType **cond) {
   Std_ReturnType r = E_NOT_OK;
-  uint32_t *magic = (uint32_t *)BL_FLSDRV_MEMORY_LOW;
+  uint32_t *magic = (uint32_t *)blFlsDriverMemoryLow;
 
   if (0x12345678 == *magic) {
     r = E_OK;
-    *cond = (Dcm_ProgConditionsType *)(BL_FLSDRV_MEMORY_LOW + 4);
+    *cond = (Dcm_ProgConditionsType *)(blFlsDriverMemoryLow + 4);
   }
 
   return r;

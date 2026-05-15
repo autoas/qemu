@@ -2,15 +2,16 @@ from building import *
 
 CWD = GetCurrentDir()
 
-objs = Glob('*.c')
+objs = Glob("*.c")
+
 
 @register_library
 class LibraryArm(Library):
     def config(self):
         self.include = CWD
-        self.CPPPATH = ['$INFRAS']
+        self.CPPPATH = ["$INFRAS"]
         self.source = objs
 
 
-for sc in Glob('*/SConscript'):
+for sc in Glob("*/SConscript"):
     SConscript(sc)

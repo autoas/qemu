@@ -1,0 +1,21 @@
+{
+  "class": "Com",
+  "networks": [
+    {
+      "name": "CAN0",
+      "network": "CAN",
+      "device": "simulator_v2",
+      "port": 0,
+      "baudrate": 500000,
+      "me": "AS",
+      "groups": [
+        {
+          "SystemTime": ["year", "month", "day", "hour", "minute", "second"]
+        }
+      ],
+      "use_dbc": true,
+      "dbc": "CAN0.dbc",
+      "trigger": ["CanNmUserData"]
+    }
+  ]
+}

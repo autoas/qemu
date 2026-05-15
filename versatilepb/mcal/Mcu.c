@@ -52,3 +52,15 @@ Std_ReturnType __weak Dem_TestStart(const uint8_t *dataIn, Dcm_OpStatusType OpSt
 
 void __weak Xcp_PerformReset(void) {
 }
+
+#ifdef USE_BL
+extern void application_main(void);
+Std_ReturnType BL_IsAppValid(void) {
+  Std_ReturnType ret = E_NOT_OK;
+  uint32_t u32Code = *(uint32_t *)application_main;
+  if (u32Code == 0xe59f0068) {
+    ret = E_OK;
+  }
+  return ret;
+}
+#endif

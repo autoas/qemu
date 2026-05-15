@@ -1,0 +1,9 @@
+{
+  "class": "Nm",
+  "networks": [
+    {
+      "name": "CANNM0",
+      "type": "CANNM"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "class": "ComM",
+  "chanels" : [
+    {
+      "name": "CAN0",
+      "type": "CAN",
+      "variant": "FULL",
+      "IpduGroupIds": ["COM_GROUP_ID_CAN0"]
+    }
+  ],
+  "users": [
+    {
+      "name": "User0",
+      "chanels": ["CAN0"]
+    }
+  ]
+}

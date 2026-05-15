@@ -1,0 +1,10 @@
+{
+  "class": "BL",
+  "general": {
+    "BL_USE_CRC_16": true
+  },
+  "memory": {
+    "FlashDriver": { "address": "0x00140000", "size": "4096" },
+    "Flash": [ { "address": "0x00040000", "size": "0x00100000", "sectorSize": 512 } ]
+  }
+}

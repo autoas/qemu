@@ -10,6 +10,7 @@
 #include "Can_Lcfg.h"
 #include "Std_Debug.h"
 #include <string.h>
+#include "Std_Critical.h"
 /* ================================ [ MACROS    ] ============================================== */
 /* this simulation just alow only one HTH/HRH for each CAN controller */
 #define CAN_MAX_HOH 32
@@ -74,11 +75,13 @@ Std_ReturnType Can_SetControllerMode(uint8_t Controller, Can_ControllerStateType
       lOpenFlag |= (1 << Controller);
       lWriteFlag = 0;
       lCanCtrlState[Controller] = CAN_CS_STARTED;
+      ret = E_OK;
       break;
     case CAN_CS_STOPPED:
     case CAN_CS_SLEEP:
       lOpenFlag &= ~(1 << Controller);
       lCanCtrlState[Controller] = Transition;
+      ret = E_OK;
       break;
     default:
       break;
@@ -131,11 +134,11 @@ Std_ReturnType Can_Write(Can_HwHandleType Hth, const Can_PduType *PduInfo) {
       memcpy(frame.data, PduInfo->sdu, PduInfo->length);
       mSetCANDLC(&frame, PduInfo->length);
       mSetCANID(&frame, PduInfo->id);
+      lswPduHandle[Hth] = PduInfo->swPduHandle;
       for (i = 0; i < CAN_MTU; i++) {
         Uart_Send(CAN_CONFIG->channelConfigs[Hth].ioBase, frame.data[i]);
       }
       lWriteFlag |= (1 << Hth);
-      lswPduHandle[Hth] = PduInfo->swPduHandle;
     } else {
       ret = CAN_BUSY;
     }
@@ -150,11 +153,18 @@ void Can_DeInit(void) {
 void Can_MainFunction_Write(void) {
   int i;
   PduIdType swPduHandle;
+  int bTxConfirm = 0;
 
   for (i = 0; i < CAN_MAX_HOH; i++) {
+    EnterCritical();
+    bTxConfirm = 0;
     if (lWriteFlag & (1 << i)) {
       swPduHandle = lswPduHandle[i];
       lWriteFlag &= ~(1 << i);
+      bTxConfirm = 1;
+    }
+    ExitCritical();
+    if (1 == bTxConfirm) {
       CanIf_TxConfirmation(swPduHandle);
     }
   }
@@ -163,6 +173,7 @@ void Can_MainFunction_Write(void) {
 void Can_Input(uint8_t Controller, uint8_t ch) {
   Can_HwType Mailbox;
   PduInfoType PduInfo;
+  Can_MainFunction_Write();
   if (lCanRxLen[Controller] < CAN_MTU) {
     lCanFrame[Controller].data[lCanRxLen[Controller]++] = ch;
     if (lCanRxLen[Controller] >= CAN_MTU) {
