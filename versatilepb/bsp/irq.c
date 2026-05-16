@@ -31,8 +31,11 @@ int __irq_call_isr(int num, void *cpu) {
   if (num > 63) {
     return -1;
   }
-  if (isr_handler_table[num])
+  if (isr_handler_table[num]) {
     isr_handler_table[num](cpu);
+  } else { /* No handler installed, disable line */
+    irq_disable_line(num);
+  }
   return 0;
 }
 
@@ -75,8 +78,3 @@ void irq_disable_line(int num) {
       __irqctrl->disable_line(num);
   }
 }
-
-
-
-
-

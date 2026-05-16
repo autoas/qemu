@@ -1,7 +1,10 @@
 {
   "class": "BL",
   "general": {
-    "BL_USE_CRC_16": true
+    "BL_USE_CRC_16": true,
+    "BL_USE_APP_INFO": true,
+    "BL_USE_APP_INFO_V2": true,
+    "BL_USE_META": true
   },
   "memory": {
     "FlashDriver": { "address": "0x00140000", "size": "4096" },

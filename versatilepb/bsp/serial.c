@@ -92,6 +92,7 @@ void Uart_Init(uint32_t ioBase, uint32_t irqNo, isr_callback_t callback) {
   enable_txe_irq(ioBase, 0);
 
   /* install interrupt service routine */
+  clear_rxe_irq(ioBase);
   irq_install_isr(irqNo, callback);
   irq_enable_line(irqNo);
 }

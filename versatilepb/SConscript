@@ -139,7 +139,7 @@ class ApplicationVersatilepbCanApp(Application):
         if os.path.isfile(sign):
             target = "%s/VersatilepbCanApp" % (BUILD_DIR)
             s19T = target + ".s19"
-            cmd = "%s -a %s -s 0x3FE80 -S crc16" % (sign, s19T)
+            cmd = "%s -a %s -s 0x3FE80 -S crc16-v3" % (sign, s19T)
             self.AddPostAction(cmd)
             env = self.ensure_env()
             cplPath = os.path.dirname(env["CC"])
