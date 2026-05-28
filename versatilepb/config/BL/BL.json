@@ -4,7 +4,10 @@
     "BL_USE_CRC_16": true,
     "BL_USE_APP_INFO": true,
     "BL_USE_APP_INFO_V2": true,
-    "BL_USE_META": true
+    "BL_USE_META": true,
+    "ROD_OFFSET": 4096,
+    "ROD_NUMBER_APP_VERSION": 0,
+    "ROD_NUMBER_PROGRAM_DEPENDENCY": 1
   },
   "memory": {
     "FlashDriver": { "address": "0x00140000", "size": "4096" },

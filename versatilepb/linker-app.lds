@@ -13,8 +13,20 @@ ENTRY(_start)
 reset_main = 0x00008040;
 
 SECTIONS {
-   .text : {
+   .init : {
+      . = ALIGN(4);
+      __init_start = .;
       *(.init)
+      . = __init_start + 4K;
+      . = ALIGN(4);
+   } > FLASH
+
+   .text : {
+      . = ALIGN(4);
+      __rod_start = .;
+      KEEP(*(ROD_ENTRY))
+      KEEP(*(ROD_CONST))
+      __rod_end = .;
       *(.text*)
       *(.rodata*)
       . = ALIGN(4);

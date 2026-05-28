@@ -53,6 +53,7 @@ libsForVersatilepbCanApp = {
     "PduR": Glob("config/Com/PduR.json"),
     "CanIf": Glob("config/Com/CanIf.json"),
     "Dcm": Glob("config/Dcm/Dcm.json"),
+    "RoD": Glob("config/RoD/RoD.json") + Glob("config/RoD/*.c"),
 }
 
 Os_Cfg = Glob("config/OS/Os.json")
