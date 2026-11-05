@@ -81,6 +81,13 @@ void App_EnterProgramSession(void) {
 }
 
 void Dcm_PerformReset(uint8_t resetType) {
+#ifdef BL_RECOVERY_MODE
+  /* the recovery mode bootloader stays alive as a pure programming target: a real reset would
+   * drop the TCP connection of a DoIP tester in the middle of the programming sequence, and as
+   * the bootloader never jumps to the application the end state is the same */
+  (void)resetType;
+  ASLOG(INFO, ("reset request %d ignored in recovery mode\n", (int)resetType));
+#else
   EnterCritical();
 #ifdef __AARCH64__
   psci_sys_reset();
@@ -88,6 +95,7 @@ void Dcm_PerformReset(uint8_t resetType) {
   reset_main();
 #endif
   ExitCritical();
+#endif
 }
 
 void InitBssSection(uint32_t *pSrc, uint32_t *pEnd) {

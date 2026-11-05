@@ -10,6 +10,12 @@ scons --cpl=QemuVersatilepbGCC --app=VersatilepbCanBLRun
 build\nt\GCC\Loader\Loader.exe -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -l %LL_DL%
 
 qemu-system-arm.exe -m 128 -M versatilepb -kernel build/nt/QemuVersatilepbGCC/VersatilepbCanBL/VersatilepbCanBL.exe -serial stdio -serial tcp:127.0.0.1:9000,server
+
+# DoIP over the SMSC 91C111 ethernet controller emulated by QEMU
+scons --cpl=QemuVersatilepbGCC --app=VersatilepbDoIPBL --net=LWIP
+scons --cpl=QemuVersatilepbGCC --app=VersatilepbDoIPBLRun
+set AS_LOCAL_IP=127.0.0.1
+build\nt\GCC\Loader\Loader.exe -d DOIP.127.0.0.1 -p 13400 -c FBL -S crc16 -f build\nt\QemuVersatilepbGCC\VersatilepbFlashDriver\VersatilepbFlashDriver.s19.sign -a build\nt\QemuVersatilepbGCC\VersatilepbCanApp\VersatilepbCanApp.s19.sign
 """
 
 
@@ -166,7 +172,12 @@ class ApplicationVersatilepbCanApp(Application):
     def platform_config(self):
         self.source += objsKey
         self.LIBS += ["Versatilepb", "LibC", "OSAL", "Shell"]
-        self.Append(CPPDEFINES=["USE_SHELL", "USE_STBM_DFT", "USE_STD_TIME_64", "USE_MCU"])
+        # USE_CAN is needed so that EcuM schedules the CAN driver main functions
+        # (Can_MainFunction_Write/Read) and the CAN stack main functions
+        # (CanIf/CanTp/Nm).  Without it the emulated serial CAN can only confirm
+        # one transmission per received frame, so a multi frame response
+        # (e.g. an XCP ShortUpload of more than one DTO) can never be sent.
+        self.Append(CPPDEFINES=["USE_CAN", "USE_SHELL", "USE_STBM_DFT", "USE_STD_TIME_64", "USE_MCU"])
         self.Append(CPPDEFINES=["USE_STD_DEBUG", "USE_STD_PRINTF", "BL_FLSDRV_MEMORY_LOW=0x00140000"])
         self.Append(CPPFLAGS=["-mcpu=arm926ej-s", "-marm"])
         self.Append(ASFLAGS=["-mcpu=arm926ej-s", "-marm"])
@@ -201,3 +212,95 @@ class ApplicationVersatilepbCanAppRun(Application):
         if IsPlatformWindows():
             target = target + ".exe"
         qemu.Run("-m 128 -M versatilepb -kernel %s" % (target))
+
+
+ApplicationBL = ApplicationCanBL.__bases__[0]
+
+objsLWIPCfg = Glob("config/LWIP/*.c")
+
+objsNet = Glob("bsp/net/*.c")
+
+objsTcpIpCfg = Glob("config/TcpIp/TcpIp_Cfg.c")
+
+libsForVersatilepbDoIPBL = {
+    "BL": Glob("config/BL/BL.json"),
+    "Dcm": Glob("config/Net/Dcm.json"),
+    "PduR": Glob("config/Net/PduR.json"),
+    # the TcpIp module itself comes from infras/communication/TcpIp/TcpIp.c unmodified, built
+    # against the lwIP socket API; only its platform port is provided here
+    "TcpIp": objsTcpIpCfg,
+}
+
+
+@register_application
+class ApplicationVersatilepbDoIPBL(ApplicationBL):
+    compiler = "QemuVersatilepbGCC"
+
+    def gencfg(self):
+        source = self.Generate(
+            ["%s/config/Net/Network.json" % (CWD), "%s/config/Net/Mempool.json" % (CWD)]
+        )
+        self.libsForBL.update(
+            {
+                "SoAd": source["SoAd"] + source["MemCluster"],
+                "DoIP": source["DoIP"],
+            }
+        )
+
+    def platform_config(self):
+        # The TcpIp module of infras is reused as it is (it is written against the lwIP socket
+        # API); the platform only provides TcpIp_Config: the SMSC 91C111 driver + netif bring
+        # up, and the main function that pumps the stack, because there is no OS and hence no
+        # lwIP tcpip thread on this target (LWIP_TCPIP_CORE_LOCKING, see config/LWIP).
+        # BL_RECOVERY_MODE keeps the bootloader running as a pure DoIP programming target.
+        self.LIBS += ["Versatilepb", "LibC", "LWIP"]
+        self.Append(
+            CPPDEFINES=[
+                "USE_STD_DEBUG",
+                "USE_STD_PRINTF",
+                "BL_RECOVERY_MODE",
+            ]
+        )
+        self.Append(CPPFLAGS=["-mcpu=arm926ej-s", "-marm"])
+        self.Append(ASFLAGS=["-mcpu=arm926ej-s", "-marm"])
+        self.Append(
+            LINKFLAGS=["-T", "%s/linker-boot.lds" % (CWD), "-Map", "%s/VersatilepbDoIPBL.map" % (BUILD_DIR)]
+        )
+        self.RegisterConfig(
+            "LWIP",
+            objsLWIPCfg,
+            CPPPATH="%s/config/LWIP" % (CWD),
+        )
+        self.CPPPATH += ["%s/bsp" % (CWD), "%s/bsp/net" % (CWD)]
+        self.source += objsAsm + objsNet
+
+    def config(self):
+        self.libsForBL = libsForVersatilepbDoIPBL
+        self.gencfg()
+        super().config()
+        # the TcpIp config includes the netif and the driver header of this board
+        self.RegisterConfig("TcpIp", objsTcpIpCfg, force=True, CPPPATH="%s/bsp/net" % (CWD))
+        self.platform_config()
+
+
+@register_application
+class ApplicationVersatilepbDoIPBLRun(Application):
+    def config(self):
+        pass
+
+    def build(self):
+        qemu = Qemu(arch="arm")
+        target = "%s/VersatilepbDoIPBL" % (BUILD_DIR[:-3])
+        if IsPlatformWindows():
+            target = target + ".exe"
+        # both the DoIP TCP data socket and the UDP discovery socket are forwarded from the host
+        # loopback to the QEMU user mode network, so that a diagnostic tester can reach the
+        # bootloader: TCP for routing activation/UDS, UDP for vehicle identification.
+        # The host port is the well known 13400: a unicast tester sends from an ephemeral port and
+        # waits for the answer on it, so the port forward does not clash with the tester. Use
+        # another host port (and the same one for the Loader's -p) if 13400 is already taken.
+        qemu.Run(
+            "-m 128 -M versatilepb -kernel %s"
+            " -nic user,model=smc91c111"
+            ",hostfwd=tcp:127.0.0.1:13400-:13400,hostfwd=udp:127.0.0.1:13400-:13400" % (target)
+        )

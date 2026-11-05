@@ -20,7 +20,7 @@
         },
         {
             "name": "ProgramDependency",
-            "crc": "0x9e2b",
+            "crc": "0x8f38",
             "data": [
                 { "name": "callout", "type": "function",
                     "value": "BL_CheckProgramDependency",
